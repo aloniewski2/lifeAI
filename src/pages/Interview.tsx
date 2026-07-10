@@ -1,26 +1,70 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Loader2, MessageCircle, Send } from "lucide-react";
+import clsx from "clsx";
 import { PageHeader } from "@/components/PageHeader";
 import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
 import { getApiKey, setApiKey } from "@/lib/apiKey";
-import { ChatTurn, draftStory, nextQuestion } from "@/lib/interviewer";
+import {
+  ChatTurn,
+  EngineId,
+  getSavedEngineId,
+  makeEngine,
+  ollamaReachable,
+  OLLAMA_MODEL,
+  saveEngineId,
+  webGpuAvailable,
+} from "@/lib/interview";
 
-function ConsentGate() {
+const ENGINES: {
+  id: EngineId;
+  label: string;
+  badge: string;
+  blurb: string;
+}[] = [
+  {
+    id: "guided",
+    label: "Guided",
+    badge: "Built-in · private",
+    blurb:
+      "Curated questions and follow-ups, no AI. Your story is saved in your exact words. Works everywhere, instantly.",
+  },
+  {
+    id: "webllm",
+    label: "On-device AI",
+    badge: "~880MB download · private",
+    blurb:
+      "Llama 3.2 runs inside your browser (WebGPU). One-time download, then it works offline — nothing ever leaves this device.",
+  },
+  {
+    id: "ollama",
+    label: "Ollama",
+    badge: "Your machine · private",
+    blurb: `Uses an Ollama server on this computer (model "${OLLAMA_MODEL}"). Free and open source; conversations stay on localhost.`,
+  },
+  {
+    id: "claude",
+    label: "Claude",
+    badge: "Cloud · your API key",
+    blurb:
+      "The highest-quality interviewer. The one option where messages leave the device — sent to Anthropic's API with your own key.",
+  },
+];
+
+function ClaudeConsentGate() {
   const { update } = useArchive();
   return (
     <div className="card">
       <h2 className="font-serif text-lg text-ink-50">
-        The interviewer sends words off-device
+        Claude sends words off-device
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-300">
-        Unlike everything else in this app, the AI interviewer sends what you
-        type in this conversation to Anthropic's API to generate its
-        questions. Nothing else in your archive is sent — only this
-        conversation, only while you use it. It stays off unless you turn it
-        on.
+        Unlike the other interviewers, Claude sends what you type in this
+        conversation to Anthropic's API. Nothing else in your archive is sent
+        — only this conversation, only while you use it. The local engines
+        (Guided, On-device AI, Ollama) never send anything anywhere.
       </p>
       <button
         type="button"
@@ -32,7 +76,7 @@ function ConsentGate() {
           }))
         }
       >
-        I understand — enable conversations
+        I understand — enable Claude
       </button>
     </div>
   );
@@ -43,9 +87,9 @@ function KeyGate({ onSaved }: { onSaved: () => void }) {
     <div className="card">
       <h2 className="font-serif text-lg text-ink-50">Bring your own key</h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-300">
-        The interviewer runs on Claude using your own Anthropic API key. The
-        key is stored only in this browser and is never included in archive
-        exports. Get one at console.anthropic.com.
+        Claude runs with your own Anthropic API key. The key is stored only in
+        this browser and is never included in archive exports. Get one at
+        console.anthropic.com — or pick a free local engine above.
       </p>
       <form
         className="mt-4 flex gap-3"
@@ -72,33 +116,105 @@ function KeyGate({ onSaved }: { onSaved: () => void }) {
   );
 }
 
+function OllamaGate() {
+  return (
+    <div className="card">
+      <h2 className="font-serif text-lg text-ink-50">
+        Can't reach Ollama on this machine
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+        Install Ollama from ollama.com (free, open source), pull a model, and
+        allow this app's origin, then reload:
+      </p>
+      <pre className="mt-3 overflow-x-auto rounded-md bg-ink-950 p-3 text-xs text-ink-200">
+        {`ollama pull ${OLLAMA_MODEL}\nOLLAMA_ORIGINS=${window.location.origin} ollama serve`}
+      </pre>
+    </div>
+  );
+}
+
+function WebGpuGate() {
+  return (
+    <div className="card">
+      <h2 className="font-serif text-lg text-ink-50">
+        This browser can't run on-device AI
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+        The on-device interviewer needs WebGPU (Chrome or Edge 113+). Pick the
+        Guided engine — it works everywhere — or use Ollama.
+      </p>
+    </div>
+  );
+}
+
 export default function Interview() {
   const { archive, update } = useArchive();
+  const [engineId, setEngineId] = useState<EngineId>(getSavedEngineId);
   const [hasKey, setHasKey] = useState(() => Boolean(getApiKey()));
+  const [ollamaUp, setOllamaUp] = useState<boolean | null>(null);
+  const [progress, setProgress] = useState<{ text: string; value: number } | null>(null);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedTitle, setSavedTitle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const started = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const enabled = archive.consent.conversations && hasKey;
+  const engine = useMemo(
+    () =>
+      makeEngine(engineId, (text, value) => setProgress({ text, value })),
+    [engineId],
+  );
 
   useEffect(() => {
-    if (!enabled || started.current) return;
-    started.current = true;
+    if (engineId === "ollama") {
+      setOllamaUp(null);
+      ollamaReachable().then(setOllamaUp);
+    }
+  }, [engineId]);
+
+  const ready =
+    engineId === "guided" ||
+    (engineId === "webllm" && webGpuAvailable()) ||
+    (engineId === "ollama" && ollamaUp === true) ||
+    (engineId === "claude" && archive.consent.conversations && hasKey);
+
+  // (Re)start the conversation whenever a ready engine is selected.
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setTurns([]);
+    setSavedTitle(null);
+    setError(null);
     setBusy(true);
-    nextQuestion([])
-      .then((q) => setTurns([{ role: "assistant", content: q }]))
-      .catch(() => setError("Couldn't reach the API — check your key."))
-      .finally(() => setBusy(false));
-  }, [enabled]);
+    engine
+      .nextQuestion([])
+      .then((q) => {
+        if (!cancelled) setTurns([{ role: "assistant", content: q }]);
+      })
+      .catch(() => {
+        if (!cancelled) setError("The interviewer couldn't start — try again.");
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBusy(false);
+          setProgress(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [engine, ready]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, busy]);
+
+  function selectEngine(id: EngineId) {
+    setEngineId(id);
+    saveEngineId(id);
+  }
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -110,14 +226,15 @@ export default function Interview() {
     setInput("");
     setBusy(true);
     try {
-      const question = await nextQuestion(next);
+      const question = await engine.nextQuestion(next);
       setTurns([...next, { role: "assistant", content: question }]);
     } catch {
-      setError("Couldn't reach the API — check your key and try again.");
+      setError("The interviewer hit a snag — try again.");
       setTurns(turns);
       setInput(trimmed);
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -126,7 +243,7 @@ export default function Interview() {
     setSaving(true);
     setError(null);
     try {
-      const draft = await draftStory(turns);
+      const draft = await engine.draftStory(turns);
       update((a) => ({
         ...a,
         entries: [
@@ -150,17 +267,57 @@ export default function Interview() {
     }
   }
 
+  const current = ENGINES.find((e) => e.id === engineId)!;
+
   return (
     <div>
       <PageHeader
-        title="AI interviewer"
-        subtitle="Talking beats a blank page. The interviewer asks one question at a time and follows up like a curious grandchild — then turns the conversation into a story in your own words, clearly labeled as drafted from this interview."
+        title="Interviewer"
+        subtitle="Talking beats a blank page. Pick an interviewer — three of the four are free and fully private — answer one question at a time, then turn the conversation into a story."
       />
 
-      {!archive.consent.conversations ? (
-        <ConsentGate />
-      ) : !hasKey ? (
+      <div className="mb-2 flex flex-wrap gap-2">
+        {ENGINES.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            onClick={() => selectEngine(e.id)}
+            className={clsx(
+              "rounded-md px-3 py-1.5 text-sm transition-colors",
+              engineId === e.id
+                ? "bg-ember-500 text-ink-950"
+                : "border border-ink-700 text-ink-300 hover:text-ink-100",
+            )}
+          >
+            {e.label}
+            <span
+              className={clsx(
+                "ml-2 text-xs",
+                engineId === e.id ? "text-ink-800" : "text-ink-400",
+              )}
+            >
+              {e.badge}
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="mb-6 max-w-2xl text-xs leading-relaxed text-ink-400">
+        {current.blurb}
+      </p>
+
+      {engineId === "claude" && !archive.consent.conversations ? (
+        <ClaudeConsentGate />
+      ) : engineId === "claude" && !hasKey ? (
         <KeyGate onSaved={() => setHasKey(true)} />
+      ) : engineId === "webllm" && !webGpuAvailable() ? (
+        <WebGpuGate />
+      ) : engineId === "ollama" && ollamaUp === false ? (
+        <OllamaGate />
+      ) : engineId === "ollama" && ollamaUp === null ? (
+        <div className="card flex items-center gap-3 text-sm text-ink-300">
+          <Loader2 className="h-4 w-4 animate-spin" /> Looking for Ollama on
+          localhost…
+        </div>
       ) : (
         <div className="card flex min-h-[24rem] flex-col">
           <div className="flex-1 space-y-4 overflow-y-auto pb-4">
@@ -187,7 +344,14 @@ export default function Interview() {
                 </p>
               </div>
             ))}
-            {busy && <Loader2 className="h-4 w-4 animate-spin text-ink-400" />}
+            {busy && (
+              <div className="flex items-center gap-3 text-xs text-ink-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {progress
+                  ? `${progress.text} ${Math.round(progress.value * 100)}%`
+                  : null}
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
@@ -225,11 +389,15 @@ export default function Interview() {
             </button>
           </form>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <DictationButton onText={(text) => setInput((v) => (v ? `${v} ${text}` : text))} />
+            <DictationButton
+              onText={(text) => setInput((v) => (v ? `${v} ${text}` : text))}
+            />
             <button
               type="button"
               className="btn-ghost"
-              disabled={saving || turns.filter((t) => t.role === "user").length === 0}
+              disabled={
+                saving || turns.filter((t) => t.role === "user").length === 0
+              }
               onClick={saveAsStory}
             >
               {saving ? (

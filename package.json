@@ -13,6 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
     "@huggingface/transformers": "^4.2.0",
+    "@mlc-ai/web-llm": "^0.2.84",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "exifr": "^7.1.3",

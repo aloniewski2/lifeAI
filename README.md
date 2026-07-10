@@ -18,7 +18,7 @@ the owner exports it.
 | **Question of the day** | A daily writing prompt from a curated bank — answering takes two minutes |
 | **Capture** | Journals, stories, milestones, and values with dates and tags; dictation via on-device Whisper |
 | **Photo import** | Batch-import photos, auto-placed on the timeline by their EXIF date; stored on-device (IndexedDB) |
-| **AI interviewer** | Claude Haiku asks follow-up questions and drafts stories in your own words (opt-in, bring-your-own API key) |
+| **Interviewer** | Four engines: Guided (built-in, no AI), on-device Llama 3.2 (WebLLM), Ollama on localhost, or Claude (opt-in, bring-your-own key) |
 | **Timeline** | The whole archive in chronological order, filterable by kind |
 | **Autobiography** | Chapters auto-assembled by year from the owner's own words |
 | **Future messages** | Sealed letters that unlock on a chosen date |
@@ -35,11 +35,20 @@ the owner exports it.
 - **Photo import** reads each photo's EXIF capture date client-side
   (`exifr`), downscales it, and stores it in IndexedDB — decades of timeline
   anchors from one multi-select. Gated behind the photos consent switch.
-- **The AI interviewer** is the one off-device feature: chat turns go to
-  Anthropic's API (`claude-haiku-4-5`) using the user's own key, stored
-  outside the archive so exports never contain it. Gated behind the
-  conversations consent switch with an explicit explanation of what leaves
-  the device.
+- **The interviewer** has four engines, three of them free and fully local:
+  - **Guided** (default) — a curated opener plus the follow-up questions a
+    good interviewer always asks; the saved story is the speaker's exact
+    words, stitched verbatim. No AI, no download, works in every browser.
+  - **On-device AI** — Llama 3.2 1B running in the browser via
+    [WebLLM](https://github.com/mlc-ai/web-llm) (Apache-2.0) on WebGPU.
+    ~880MB one-time download, cached; then it works offline.
+  - **Ollama** — talks to a local [Ollama](https://ollama.com) server at
+    `localhost:11434` (start it with
+    `OLLAMA_ORIGINS=<app origin> ollama serve`). Best local quality.
+  - **Claude** — the optional cloud tier (`claude-haiku-4-5`, user's own
+    key stored outside the archive so exports never contain it). The only
+    engine where words leave the device, so it alone sits behind the
+    conversations consent switch.
 
 ## Product principles
 
