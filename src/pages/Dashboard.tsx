@@ -1,13 +1,17 @@
-import { Link } from "react-router-dom";
-import { BookOpen, Clock, Mail, PenLine } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { BookOpen, Clock, Mail, PenLine, RefreshCw, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive } from "@/lib/store";
 import { chaptersByYear, pendingMessages } from "@/lib/archive";
+import { anotherPrompt, promptOfTheDay } from "@/lib/prompts";
 import { ENTRY_KIND_LABELS } from "@/lib/types";
 
 export default function Dashboard() {
   const { archive, update } = useArchive();
+  const navigate = useNavigate();
   const today = new Date().toISOString().slice(0, 10);
+  const [prompt, setPrompt] = useState(() => promptOfTheDay(today));
   const chapters = chaptersByYear(archive.entries);
   const pending = pendingMessages(archive.messages, today);
   const name = archive.profile.name;
@@ -24,6 +28,37 @@ export default function Dashboard() {
           </Link>
         }
       />
+
+      <div className="card mb-6 border-ember-500/30">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-ember-400">
+          <Sparkles className="h-3.5 w-3.5" />
+          Today's question
+        </div>
+        <p className="mt-3 font-serif text-xl leading-snug text-ink-50">
+          {prompt.question}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() =>
+              navigate("/app/capture", {
+                state: { kind: prompt.kind, question: prompt.question },
+              })
+            }
+          >
+            Answer it — takes two minutes
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setPrompt((p) => anotherPrompt(p))}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Different question
+          </button>
+        </div>
+      </div>
 
       {!name && (
         <div className="card mb-6">

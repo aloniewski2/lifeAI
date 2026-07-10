@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { ArchiveContext, loadArchive, saveArchive } from "@/lib/store";
 import { Archive } from "@/lib/types";
@@ -11,6 +11,9 @@ import Autobiography from "@/pages/Autobiography";
 import Messages from "@/pages/Messages";
 import Memorial from "@/pages/Memorial";
 import Vault from "@/pages/Vault";
+
+// Lazy: keeps the Anthropic SDK out of the main bundle until it's used.
+const Interview = lazy(() => import("@/pages/Interview"));
 
 export default function App() {
   const [archive, setArchive] = useState<Archive>(loadArchive);
@@ -34,6 +37,14 @@ export default function App() {
           <Route path="/app/capture" element={<Capture />} />
           <Route path="/app/timeline" element={<Timeline />} />
           <Route path="/app/autobiography" element={<Autobiography />} />
+          <Route
+            path="/app/interview"
+            element={
+              <Suspense fallback={null}>
+                <Interview />
+              </Suspense>
+            }
+          />
           <Route path="/app/messages" element={<Messages />} />
           <Route path="/app/memorial" element={<Memorial />} />
           <Route path="/app/vault" element={<Vault />} />

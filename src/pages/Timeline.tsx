@@ -3,9 +3,23 @@ import { format } from "date-fns";
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive } from "@/lib/store";
 import { sortByDate } from "@/lib/archive";
+import { deletePhoto } from "@/lib/photoStore";
+import { usePhoto } from "@/lib/usePhoto";
 import { EntryKind, ENTRY_KIND_LABELS } from "@/lib/types";
 import { Trash2 } from "lucide-react";
 import clsx from "clsx";
+
+function EntryPhoto({ entryId, title }: { entryId: string; title: string }) {
+  const url = usePhoto(entryId);
+  if (!url) return null;
+  return (
+    <img
+      src={url}
+      alt={title}
+      className="mt-3 max-h-72 rounded-md border border-ink-800 object-contain"
+    />
+  );
+}
 
 export default function Timeline() {
   const { archive, update } = useArchive();
@@ -19,6 +33,7 @@ export default function Timeline() {
   function removeEntry(id: string) {
     if (!window.confirm("Remove this moment from your archive?")) return;
     update((a) => ({ ...a, entries: a.entries.filter((e) => e.id !== id) }));
+    void deletePhoto(id);
   }
 
   return (
@@ -80,9 +95,14 @@ export default function Timeline() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-200">
-                  {entry.content}
-                </p>
+                {entry.content && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-200">
+                    {entry.content}
+                  </p>
+                )}
+                {entry.kind === "photo" && (
+                  <EntryPhoto entryId={entry.id} title={entry.title} />
+                )}
                 {entry.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {entry.tags.map((tag) => (

@@ -3,6 +3,8 @@ import { Download, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive, wipeArchive } from "@/lib/store";
 import { parseArchive, serializeArchive } from "@/lib/archive";
+import { setApiKey } from "@/lib/apiKey";
+import { wipePhotos } from "@/lib/photoStore";
 import { Consent, EMPTY_ARCHIVE } from "@/lib/types";
 
 const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
@@ -14,17 +16,17 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   {
     key: "photos",
     label: "Photos",
-    note: "Roadmap — import from your library, on-device only.",
+    note: "Imported photos are downscaled and stored only in this browser.",
   },
   {
     key: "voice",
-    label: "Voice notes",
-    note: "Roadmap — recorded and transcribed locally.",
+    label: "Voice dictation",
+    note: "Recorded and transcribed entirely on this device (Whisper). Audio never leaves it.",
   },
   {
     key: "conversations",
-    label: "Daily conversations",
-    note: "Roadmap — always opt-in, always visible when recording.",
+    label: "AI interviewer",
+    note: "The one off-device feature: interview messages go to Anthropic's API using your own key.",
   },
   {
     key: "calendar",
@@ -90,6 +92,8 @@ export default function Vault() {
       )
     ) {
       wipeArchive();
+      setApiKey("");
+      void wipePhotos();
       update(() => structuredClone(EMPTY_ARCHIVE));
     }
   }

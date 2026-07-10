@@ -1,6 +1,19 @@
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive } from "@/lib/store";
 import { sortByDate } from "@/lib/archive";
+import { usePhoto } from "@/lib/usePhoto";
+
+function MemorialPhoto({ entryId, title }: { entryId: string; title: string }) {
+  const url = usePhoto(entryId);
+  if (!url) return null;
+  return (
+    <img
+      src={url}
+      alt={title}
+      className="h-32 w-32 rounded-md border border-ink-800 object-cover"
+    />
+  );
+}
 
 export default function Memorial() {
   const { archive, update } = useArchive();
@@ -12,6 +25,9 @@ export default function Memorial() {
   const milestones = sortByDate(
     archive.entries.filter((e) => e.kind === "milestone"),
   );
+  const photos = sortByDate(
+    archive.entries.filter((e) => e.kind === "photo"),
+  ).slice(0, 12);
 
   return (
     <div>
@@ -72,6 +88,19 @@ export default function Memorial() {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {photos.length > 0 && (
+          <section className="mt-10">
+            <h3 className="font-serif text-xl text-ember-300">
+              A life in pictures
+            </h3>
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              {photos.map((p) => (
+                <MemorialPhoto key={p.id} entryId={p.id} title={p.title} />
+              ))}
+            </div>
           </section>
         )}
 
