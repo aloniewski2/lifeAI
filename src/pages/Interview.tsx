@@ -7,6 +7,7 @@ import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
 import { getApiKey, setApiKey } from "@/lib/apiKey";
+import { speak, stopSpeaking } from "@/lib/tts";
 import {
   ChatTurn,
   EngineId,
@@ -162,24 +163,35 @@ export default function Interview() {
   const [readAloud, setReadAloud] = useState(
     () => localStorage.getItem("ai-legacy-os/read-aloud") === "1",
   );
+  const [voiceProgress, setVoiceProgress] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Optionally speak each new question with the browser's built-in voice
-  // (works offline; nothing leaves the device).
+  // Speak each new question with the on-device natural voice (Kokoro).
+  // The first use downloads the ~86MB voice model, then it's cached.
   useEffect(() => {
-    if (!readAloud || !("speechSynthesis" in window)) return;
+    if (!readAloud) return;
     const last = turns[turns.length - 1];
     if (!last || last.role !== "assistant") return;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(last.content));
-    return () => window.speechSynthesis.cancel();
+    let active = true;
+    void speak(last.content, (p) => {
+      if (active) setVoiceProgress(p < 1 ? p : null);
+    }).finally(() => {
+      if (active) setVoiceProgress(null);
+    });
+    return () => {
+      active = false;
+      stopSpeaking();
+    };
   }, [turns, readAloud]);
 
   function toggleReadAloud() {
     setReadAloud((v) => {
       const next = !v;
       localStorage.setItem("ai-legacy-os/read-aloud", next ? "1" : "0");
-      if (!next && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      if (!next) {
+        stopSpeaking();
+        setVoiceProgress(null);
+      }
       return next;
     });
   }
@@ -400,7 +412,7 @@ export default function Interview() {
               className="field flex-1"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Answer out loud in your head, then just type it plainly."
+              placeholder="Speak or type — you can edit your answer here before sending."
             />
             <button
               type="submit"
@@ -416,26 +428,30 @@ export default function Interview() {
               <DictationButton
                 inlineConsent
                 label="Answer by voice"
-                stopLabel="Stop & send"
+                stopLabel="Stop & review"
                 disabled={busy}
-                onText={(text) => send(text)}
+                onText={(text) =>
+                  setInput((v) => (v ? `${v.trimEnd()} ${text}` : text))
+                }
               />
-              {"speechSynthesis" in window && (
-                <button
-                  type="button"
-                  onClick={toggleReadAloud}
-                  className="btn-ghost px-3 py-1.5"
-                  aria-pressed={readAloud}
-                  aria-label="Read questions aloud"
-                >
-                  {readAloud ? (
-                    <Volume2 className="h-4 w-4" />
-                  ) : (
-                    <VolumeX className="h-4 w-4" />
-                  )}
-                  {readAloud ? "Reading questions aloud" : "Read questions aloud"}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={toggleReadAloud}
+                className="btn-ghost px-3 py-1.5"
+                aria-pressed={readAloud}
+                aria-label="Natural voice"
+              >
+                {readAloud ? (
+                  <Volume2 className="h-4 w-4" />
+                ) : (
+                  <VolumeX className="h-4 w-4" />
+                )}
+                {voiceProgress != null
+                  ? `Downloading voice… ${Math.round(voiceProgress * 100)}%`
+                  : readAloud
+                    ? "Natural voice on"
+                    : "Natural voice"}
+              </button>
             </div>
             <button
               type="button"
