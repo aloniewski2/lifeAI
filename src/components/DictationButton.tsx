@@ -10,20 +10,46 @@ import {
 import { useArchive } from "@/lib/store";
 
 /**
- * Tap to talk, tap to stop; the transcript is appended to the entry text.
- * Everything — recording and Whisper transcription — happens on-device.
+ * Tap to talk, tap to stop; the transcript goes to onText. Everything —
+ * recording and Whisper transcription — happens on-device.
+ *
+ * `inlineConsent` renders an enable-voice button right here instead of
+ * linking to the Vault, for flows (like the interview) where leaving the
+ * page would break the moment. `label` overrides the idle button text.
  */
 export function DictationButton({
   onText,
+  inlineConsent = false,
+  label = "Dictate",
+  stopLabel = "Stop & transcribe",
+  disabled = false,
 }: {
   onText: (text: string) => void;
+  inlineConsent?: boolean;
+  label?: string;
+  stopLabel?: string;
+  disabled?: boolean;
 }) {
-  const { archive } = useArchive();
+  const { archive, update } = useArchive();
   const [status, setStatus] = useState<TranscriberStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const recordingRef = useRef<Recording | null>(null);
 
   if (!archive.consent.voice) {
+    if (inlineConsent) {
+      return (
+        <button
+          type="button"
+          className="btn-ghost px-3 py-1.5"
+          onClick={() =>
+            update((a) => ({ ...a, consent: { ...a.consent, voice: true } }))
+          }
+        >
+          <Mic className="h-4 w-4" />
+          Enable voice — stays on this device
+        </button>
+      );
+    }
     return (
       <p className="text-xs text-ink-400">
         Prefer talking to typing?{" "}
@@ -71,7 +97,7 @@ export function DictationButton({
       <button
         type="button"
         onClick={toggle}
-        disabled={busy}
+        disabled={busy || disabled}
         className={
           status === "recording"
             ? "inline-flex items-center gap-2 rounded-md bg-red-500/90 px-3 py-1.5 text-sm text-white"
@@ -87,10 +113,10 @@ export function DictationButton({
           <Mic className="h-4 w-4" />
         )}
         {status === "recording"
-          ? "Stop & transcribe"
+          ? stopLabel
           : busy
             ? "Transcribing on-device…"
-            : "Dictate"}
+            : label}
       </button>
       {status === "recording" && (
         <span className="flex items-center gap-1.5 text-xs text-red-300">

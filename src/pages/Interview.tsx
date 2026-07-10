@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Loader2, MessageCircle, Send } from "lucide-react";
+import { BookOpen, Loader2, MessageCircle, Send, Volume2, VolumeX } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "@/components/PageHeader";
 import { DictationButton } from "@/components/DictationButton";
@@ -159,7 +159,30 @@ export default function Interview() {
   const [saving, setSaving] = useState(false);
   const [savedTitle, setSavedTitle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [readAloud, setReadAloud] = useState(
+    () => localStorage.getItem("ai-legacy-os/read-aloud") === "1",
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Optionally speak each new question with the browser's built-in voice
+  // (works offline; nothing leaves the device).
+  useEffect(() => {
+    if (!readAloud || !("speechSynthesis" in window)) return;
+    const last = turns[turns.length - 1];
+    if (!last || last.role !== "assistant") return;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(last.content));
+    return () => window.speechSynthesis.cancel();
+  }, [turns, readAloud]);
+
+  function toggleReadAloud() {
+    setReadAloud((v) => {
+      const next = !v;
+      localStorage.setItem("ai-legacy-os/read-aloud", next ? "1" : "0");
+      if (!next && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      return next;
+    });
+  }
 
   const engine = useMemo(
     () =>
@@ -389,9 +412,31 @@ export default function Interview() {
             </button>
           </form>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <DictationButton
-              onText={(text) => setInput((v) => (v ? `${v} ${text}` : text))}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <DictationButton
+                inlineConsent
+                label="Answer by voice"
+                stopLabel="Stop & send"
+                disabled={busy}
+                onText={(text) => send(text)}
+              />
+              {"speechSynthesis" in window && (
+                <button
+                  type="button"
+                  onClick={toggleReadAloud}
+                  className="btn-ghost px-3 py-1.5"
+                  aria-pressed={readAloud}
+                  aria-label="Read questions aloud"
+                >
+                  {readAloud ? (
+                    <Volume2 className="h-4 w-4" />
+                  ) : (
+                    <VolumeX className="h-4 w-4" />
+                  )}
+                  {readAloud ? "Reading questions aloud" : "Read questions aloud"}
+                </button>
+              )}
+            </div>
             <button
               type="button"
               className="btn-ghost"
