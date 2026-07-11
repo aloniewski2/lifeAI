@@ -10,8 +10,9 @@ import {
 import { useArchive } from "@/lib/store";
 
 /**
- * Tap to talk, tap to stop; the transcript goes to onText. Everything —
- * recording and Whisper transcription — happens on-device.
+ * Tap to talk, tap to stop; the transcript AND the original recording go
+ * to onText — the recording is the keepsake, the transcript is the text.
+ * Everything (recording and Whisper transcription) happens on-device.
  *
  * `inlineConsent` renders an enable-voice button right here instead of
  * linking to the Vault, for flows (like the interview) where leaving the
@@ -24,7 +25,7 @@ export function DictationButton({
   stopLabel = "Stop & transcribe",
   disabled = false,
 }: {
-  onText: (text: string) => void;
+  onText: (text: string, audio: Blob) => void;
   inlineConsent?: boolean;
   label?: string;
   stopLabel?: string;
@@ -79,7 +80,7 @@ export function DictationButton({
       try {
         setStatus("transcribing");
         const text = await transcribe(blob);
-        if (text) onText(text);
+        if (text) onText(text, blob);
         setStatus("idle");
       } catch {
         setError(

@@ -26,6 +26,7 @@ export function parseArchive(raw: string | null): Archive {
       consent: { ...DEFAULT_CONSENT, ...data.consent },
       entries: Array.isArray(data.entries) ? data.entries : [],
       messages: Array.isArray(data.messages) ? data.messages : [],
+      lastExportedAt: data.lastExportedAt ?? null,
     };
   } catch {
     return structuredClone(EMPTY_ARCHIVE);
@@ -77,6 +78,18 @@ export function dueMessages(
   return messages
     .filter((m) => m.deliverOn <= today)
     .sort((a, b) => a.deliverOn.localeCompare(b.deliverOn));
+}
+
+/** Case-insensitive match over title, content, and tags. */
+export function searchEntries(entries: Entry[], query: string): Entry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entries;
+  return entries.filter(
+    (e) =>
+      e.title.toLowerCase().includes(q) ||
+      e.content.toLowerCase().includes(q) ||
+      e.tags.some((t) => t.toLowerCase().includes(q)),
+  );
 }
 
 export function newId(): string {

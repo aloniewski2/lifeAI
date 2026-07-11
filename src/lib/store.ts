@@ -1,28 +1,51 @@
 import { createContext, useContext } from "react";
 import { Archive } from "./types";
 import { parseArchive, serializeArchive } from "./archive";
+import { idbDelete, idbGet, idbPut } from "./db";
 
 /**
- * Local-first storage: the whole archive lives in this browser, under one
- * key. No account, no server. Export/import in the Vault is the way data
- * moves between devices for now.
+ * Local-first storage: the whole archive lives in this browser's
+ * IndexedDB, alongside photos and voice recordings. No account, no
+ * server. The ZIP export in the Vault is how data moves between devices.
+ *
+ * Earlier versions kept the archive in localStorage; loadArchive migrates
+ * that automatically on first run.
  */
-export const STORAGE_KEY = "ai-legacy-os/archive";
+const IDB_KEY = "archive";
+const LEGACY_STORAGE_KEY = "ai-legacy-os/archive";
 
-export function loadArchive(): Archive {
+export async function loadArchive(): Promise<Archive> {
+  const stored = await idbGet<string>("archive", IDB_KEY).catch(() => null);
+  if (stored) return parseArchive(stored);
+
+  // One-time migration from the old localStorage home.
+  let legacy: string | null = null;
   try {
-    return parseArchive(localStorage.getItem(STORAGE_KEY));
+    legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
   } catch {
-    return parseArchive(null);
+    legacy = null;
   }
+  const archive = parseArchive(legacy);
+  if (legacy) {
+    await idbPut("archive", IDB_KEY, serializeArchive(archive));
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  }
+  return archive;
 }
 
 export function saveArchive(archive: Archive): void {
-  localStorage.setItem(STORAGE_KEY, serializeArchive(archive));
+  void idbPut("archive", IDB_KEY, serializeArchive(archive)).catch((err) => {
+    console.error("Failed to persist archive", err);
+  });
 }
 
 export function wipeArchive(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  void idbDelete("archive", IDB_KEY);
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // best-effort
+  }
 }
 
 export interface ArchiveStore {

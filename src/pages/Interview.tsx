@@ -7,6 +7,7 @@ import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
 import { getApiKey, setApiKey } from "@/lib/apiKey";
+import { putAudio } from "@/lib/audioStore";
 import { speak, stopSpeaking } from "@/lib/tts";
 import {
   ChatTurn,
@@ -164,6 +165,7 @@ export default function Interview() {
     () => localStorage.getItem("ai-legacy-os/read-aloud") === "1",
   );
   const [voiceProgress, setVoiceProgress] = useState<number | null>(null);
+  const takesRef = useRef<Blob[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Speak each new question with the on-device natural voice (Kokoro).
@@ -279,12 +281,13 @@ export default function Interview() {
     setError(null);
     try {
       const draft = await engine.draftStory(turns);
+      const id = newId();
       update((a) => ({
         ...a,
         entries: [
           ...a.entries,
           {
-            id: newId(),
+            id,
             kind: "story",
             title: draft.title,
             content: draft.story,
@@ -294,6 +297,11 @@ export default function Interview() {
           },
         ],
       }));
+      // Attach the spoken answers so the story keeps their actual voice.
+      if (takesRef.current.length > 0) {
+        void putAudio(id, takesRef.current);
+        takesRef.current = [];
+      }
       setSavedTitle(draft.title);
     } catch {
       setError("Couldn't draft the story — try again.");
@@ -430,9 +438,10 @@ export default function Interview() {
                 label="Answer by voice"
                 stopLabel="Stop & review"
                 disabled={busy}
-                onText={(text) =>
-                  setInput((v) => (v ? `${v.trimEnd()} ${text}` : text))
-                }
+                onText={(text, audio) => {
+                  setInput((v) => (v ? `${v.trimEnd()} ${text}` : text));
+                  takesRef.current.push(audio);
+                }}
               />
               <button
                 type="button"

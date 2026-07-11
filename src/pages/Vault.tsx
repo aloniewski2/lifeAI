@@ -1,10 +1,12 @@
-import { ChangeEvent, useRef } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
+import { ChangeEvent, useRef, useState } from "react";
+import { Download, Loader2, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive, wipeArchive } from "@/lib/store";
-import { parseArchive, serializeArchive } from "@/lib/archive";
+import { parseArchive } from "@/lib/archive";
+import { buildBackupZip, parseBackupZip } from "@/lib/backup";
 import { setApiKey } from "@/lib/apiKey";
-import { wipePhotos } from "@/lib/photoStore";
+import { allPhotos, putPhoto, wipePhotos } from "@/lib/photoStore";
+import { allAudio, putAudio, wipeAudio } from "@/lib/audioStore";
 import { Consent, EMPTY_ARCHIVE } from "@/lib/types";
 
 const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
@@ -25,7 +27,7 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   },
   {
     key: "conversations",
-    label: "AI interviewer",
+    label: "AI interviewer (Claude)",
     note: "The one off-device feature: interview messages go to Anthropic's API using your own key.",
   },
   {
@@ -47,53 +49,91 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
 
 export default function Vault() {
   const { archive, update } = useArchive();
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  function exportArchive() {
-    const blob = new Blob([serializeArchive(archive)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "legacy-archive.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  async function exportBackup() {
+    setExporting(true);
+    try {
+      const now = new Date().toISOString();
+      const stamped = { ...archive, lastExportedAt: now };
+      const [photos, audio] = await Promise.all([allPhotos(), allAudio()]);
+      const blob = await buildBackupZip({
+        archive: stamped,
+        photos: Object.fromEntries(photos),
+        audio: Object.fromEntries(audio),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `legacy-archive-${now.slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      update(() => stamped);
+    } finally {
+      setExporting(false);
+    }
   }
 
-  function importArchive(e: ChangeEvent<HTMLInputElement>) {
+  async function importBackup(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    file.text().then((text) => {
-      const imported = parseArchive(text);
-      if (
-        imported.entries.length === 0 &&
-        imported.messages.length === 0 &&
-        !imported.profile.name
-      ) {
-        window.alert("That file doesn't look like a legacy archive export.");
+    setImporting(true);
+    try {
+      if (file.name.endsWith(".json")) {
+        // Legacy JSON export (no photos/audio).
+        const imported = parseArchive(await file.text());
+        if (imported.entries.length === 0 && !imported.profile.name) {
+          window.alert("That file doesn't look like a legacy archive export.");
+          return;
+        }
+        if (
+          window.confirm(
+            "Replace everything on this device with the imported archive?",
+          )
+        ) {
+          update(() => imported);
+        }
         return;
       }
+
+      const contents = await parseBackupZip(file);
       if (
-        window.confirm(
-          "Replace everything on this device with the imported archive?",
+        !window.confirm(
+          `Replace everything on this device with this backup? It contains ${contents.archive.entries.length} entries, ${Object.keys(contents.photos).length} photos, and ${Object.keys(contents.audio).length} recordings.`,
         )
       ) {
-        update(() => imported);
+        return;
       }
-    });
-    e.target.value = "";
+      await Promise.all([wipePhotos(), wipeAudio()]);
+      await Promise.all([
+        ...Object.entries(contents.photos).map(([id, blob]) =>
+          putPhoto(id, blob),
+        ),
+        ...Object.entries(contents.audio).map(([id, takes]) =>
+          putAudio(id, takes),
+        ),
+      ]);
+      update(() => contents.archive);
+    } catch {
+      window.alert("That file couldn't be read as a legacy archive backup.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   function wipe() {
     if (
       window.confirm(
-        "Permanently delete your entire archive from this device? This cannot be undone.",
+        "Permanently delete your entire archive from this device — entries, photos, and recordings? This cannot be undone.",
       )
     ) {
       wipeArchive();
       setApiKey("");
       void wipePhotos();
+      void wipeAudio();
       update(() => structuredClone(EMPTY_ARCHIVE));
     }
   }
@@ -150,26 +190,52 @@ export default function Vault() {
       </section>
 
       <section className="card mb-6">
-        <h2 className="font-serif text-lg text-ink-50">Your data</h2>
+        <h2 className="font-serif text-lg text-ink-50">Backup</h2>
+        <p className="mt-1 text-sm text-ink-300">
+          One ZIP with everything — entries, photos, and voice recordings.
+          Keep a copy somewhere safe; importing it on any device restores the
+          whole archive.
+          {archive.lastExportedAt && (
+            <>
+              {" "}
+              Last backup:{" "}
+              {new Date(archive.lastExportedAt).toLocaleDateString()}.
+            </>
+          )}
+        </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" onClick={exportArchive} className="btn-ghost">
-            <Download className="h-4 w-4" />
-            Export archive (JSON)
+          <button
+            type="button"
+            onClick={exportBackup}
+            disabled={exporting}
+            className="btn-primary"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Export backup (ZIP)
           </button>
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
+            disabled={importing}
             className="btn-ghost"
           >
-            <Upload className="h-4 w-4" />
-            Import archive
+            {importing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            Import backup
           </button>
           <input
             ref={fileInput}
             type="file"
-            accept="application/json"
+            accept=".zip,.json,application/zip,application/json"
             className="hidden"
-            onChange={importArchive}
+            onChange={importBackup}
           />
         </div>
       </section>

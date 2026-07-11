@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Clock, Mail, PenLine, RefreshCw, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  Clock,
+  Mail,
+  PenLine,
+  RefreshCw,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useArchive } from "@/lib/store";
 import { chaptersByYear, pendingMessages } from "@/lib/archive";
@@ -16,6 +24,15 @@ export default function Dashboard() {
   const pending = pendingMessages(archive.messages, today);
   const name = archive.profile.name;
 
+  const daysSinceBackup = archive.lastExportedAt
+    ? Math.floor(
+        (Date.now() - new Date(archive.lastExportedAt).getTime()) / 86_400_000,
+      )
+    : null;
+  const needsBackup =
+    archive.entries.length > 0 &&
+    (daysSinceBackup === null || daysSinceBackup >= 30);
+
   return (
     <div>
       <PageHeader
@@ -28,6 +45,22 @@ export default function Dashboard() {
           </Link>
         }
       />
+
+      {needsBackup && (
+        <div className="card mb-6 flex items-center justify-between gap-4 border-amber-600/40">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <p className="text-sm leading-relaxed text-ink-200">
+              {daysSinceBackup === null
+                ? "Your archive has never been backed up. It lives only in this browser — one export keeps it safe."
+                : `Your last backup was ${daysSinceBackup} days ago. Everything since then exists only in this browser.`}
+            </p>
+          </div>
+          <Link to="/app/vault" className="btn-ghost shrink-0">
+            Back up now
+          </Link>
+        </div>
+      )}
 
       <div className="card mb-6 border-ember-500/30">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-ember-400">

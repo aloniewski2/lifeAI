@@ -54,6 +54,8 @@ export interface Archive {
   consent: Consent;
   entries: Entry[];
   messages: FutureMessage[];
+  /** ISO timestamp of the last full backup export, for the backup nudge. */
+  lastExportedAt: string | null;
 }
 
 export const DEFAULT_CONSENT: Consent = {
@@ -72,6 +74,7 @@ export const EMPTY_ARCHIVE: Archive = {
   consent: DEFAULT_CONSENT,
   entries: [],
   messages: [],
+  lastExportedAt: null,
 };
 
 export const ENTRY_KIND_LABELS: Record<EntryKind, string> = {

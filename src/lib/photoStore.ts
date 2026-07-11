@@ -1,62 +1,28 @@
+import { idbClear, idbDelete, idbEntries, idbGet, idbPut } from "./db";
+
 /**
  * Photo blobs live in IndexedDB (localStorage is too small for images),
  * keyed by the entry id of the photo entry that references them. Still
  * on-device only.
  */
-const DB_NAME = "ai-legacy-os";
-const STORE = "photos";
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      if (!req.result.objectStoreNames.contains(STORE)) {
-        req.result.createObjectStore(STORE);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function tx(db: IDBDatabase, mode: IDBTransactionMode): IDBObjectStore {
-  return db.transaction(STORE, mode).objectStore(STORE);
-}
-
 export async function putPhoto(entryId: string, blob: Blob): Promise<void> {
-  const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const req = tx(db, "readwrite").put(blob, entryId);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  await idbPut("photos", entryId, blob);
 }
 
 export async function getPhoto(entryId: string): Promise<Blob | null> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const req = tx(db, "readonly").get(entryId);
-    req.onsuccess = () => resolve((req.result as Blob) ?? null);
-    req.onerror = () => reject(req.error);
-  });
+  return idbGet<Blob>("photos", entryId);
 }
 
 export async function deletePhoto(entryId: string): Promise<void> {
-  const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const req = tx(db, "readwrite").delete(entryId);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  await idbDelete("photos", entryId);
 }
 
 export async function wipePhotos(): Promise<void> {
-  const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const req = tx(db, "readwrite").clear();
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  await idbClear("photos");
+}
+
+export async function allPhotos(): Promise<[string, Blob][]> {
+  return idbEntries<Blob>("photos");
 }
 
 /**

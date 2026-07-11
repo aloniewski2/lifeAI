@@ -7,6 +7,7 @@ import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
 import { makeThumbnail, putPhoto } from "@/lib/photoStore";
+import { putAudio } from "@/lib/audioStore";
 import { EntryKind, ENTRY_KIND_LABELS } from "@/lib/types";
 import clsx from "clsx";
 
@@ -42,6 +43,7 @@ function TextEntryForm({ kind, question }: { kind: EntryKind; question?: string 
   const { update } = useArchive();
   const [saved, setSaved] = useState(false);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+  const takesRef = useRef<Blob[]>([]);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,12 +58,13 @@ function TextEntryForm({ kind, question }: { kind: EntryKind; question?: string 
       .filter(Boolean);
     if (!title || !content || !date) return;
 
+    const id = newId();
     update((a) => ({
       ...a,
       entries: [
         ...a.entries,
         {
-          id: newId(),
+          id,
           kind,
           title,
           content,
@@ -71,6 +74,11 @@ function TextEntryForm({ kind, question }: { kind: EntryKind; question?: string 
         },
       ],
     }));
+    // Keep the original recordings — the voice itself is a keepsake.
+    if (takesRef.current.length > 0) {
+      void putAudio(id, takesRef.current);
+      takesRef.current = [];
+    }
     form.reset();
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2500);
@@ -97,10 +105,11 @@ function TextEntryForm({ kind, question }: { kind: EntryKind; question?: string 
         placeholder="Write freely — or dictate below."
       />
       <DictationButton
-        onText={(text) => {
+        onText={(text, audio) => {
           const el = contentRef.current;
           if (!el) return;
           el.value = el.value ? `${el.value.trimEnd()} ${text}` : text;
+          takesRef.current.push(audio);
         }}
       />
       <div className="flex flex-wrap gap-4">
