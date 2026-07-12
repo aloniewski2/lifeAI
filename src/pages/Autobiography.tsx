@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { ListenButton } from "@/components/ListenButton";
 import { useArchive } from "@/lib/store";
 import { chaptersByYear } from "@/lib/archive";
 
@@ -30,9 +31,16 @@ export default function Autobiography() {
           <div className="mt-10 space-y-10">
             {chapters.map(({ year, entries }, index) => (
               <section key={year}>
-                <h3 className="font-serif text-xl text-ember-300">
-                  Chapter {index + 1} · {year}
-                </h3>
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-serif text-xl text-ember-300">
+                    Chapter {index + 1} · {year}
+                  </h3>
+                  <ListenButton
+                    text={entries
+                      .map((e) => `${e.title}. ${e.content}`)
+                      .join(" ")}
+                  />
+                </div>
                 <div className="mt-4 space-y-6">
                   {entries.map((entry) => (
                     <div key={entry.id}>

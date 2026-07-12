@@ -22,6 +22,7 @@ interface KokoroLike {
 let ttsPromise: Promise<KokoroLike> | null = null;
 let currentAudio: HTMLAudioElement | null = null;
 let currentUrl: string | null = null;
+let currentOnEnded: (() => void) | null = null;
 let speakSeq = 0;
 
 export function loadNaturalVoice(
@@ -87,18 +88,31 @@ export function stopSpeaking(): void {
     currentUrl = null;
   }
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (currentOnEnded) {
+    const ended = currentOnEnded;
+    currentOnEnded = null;
+    ended();
+  }
 }
 
 /**
  * Speak text with the natural voice; falls back to the browser voice if
- * Kokoro is unavailable. A newer speak() call cancels an older one.
+ * Kokoro is unavailable. A newer speak() call cancels an older one; the
+ * superseded call's onEnded fires so its UI can reset.
  */
 export async function speak(
   text: string,
   onProgress?: (progress: number) => void,
+  onEnded?: () => void,
 ): Promise<void> {
   stopSpeaking();
   const seq = speakSeq;
+  currentOnEnded = onEnded ?? null;
+  const finish = () => {
+    if (seq !== speakSeq) return;
+    currentOnEnded = null;
+    onEnded?.();
+  };
   try {
     const tts = await loadNaturalVoice(onProgress);
     if (seq !== speakSeq) return; // superseded while loading
@@ -109,11 +123,16 @@ export async function speak(
       : wavBlobFrom(result.audio, result.sampling_rate);
     currentUrl = URL.createObjectURL(blob);
     currentAudio = new Audio(currentUrl);
+    currentAudio.onended = finish;
     await currentAudio.play();
   } catch {
     if (seq !== speakSeq) return;
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = finish;
+      window.speechSynthesis.speak(utterance);
+    } else {
+      finish();
     }
   }
 }

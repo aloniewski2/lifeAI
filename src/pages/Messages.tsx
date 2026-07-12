@@ -2,6 +2,7 @@ import { FormEvent } from "react";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { ListenButton } from "@/components/ListenButton";
 import { useArchive } from "@/lib/store";
 import { dueMessages, newId, pendingMessages } from "@/lib/archive";
 import { FutureMessage } from "@/lib/types";
@@ -37,6 +38,9 @@ function MessageCard({
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-200">
         {message.body}
       </p>
+      <div className="mt-3">
+        <ListenButton text={message.body} />
+      </div>
     </div>
   );
 }
