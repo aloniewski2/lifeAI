@@ -1,6 +1,7 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { Download, Loader2, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PrepareDevice } from "@/components/PrepareDevice";
 import { useArchive, wipeArchive } from "@/lib/store";
 import { parseArchive } from "@/lib/archive";
 import { buildBackupZip, parseBackupZip } from "@/lib/backup";
@@ -144,6 +145,8 @@ export default function Vault() {
         title="Vault & privacy"
         subtitle="Your archive belongs to you. It is stored only in this browser, it moves only when you export it, and it disappears the moment you say so."
       />
+
+      <PrepareDevice />
 
       <section className="card mb-6">
         <h2 className="font-serif text-lg text-ink-50">Sources</h2>

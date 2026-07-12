@@ -14,7 +14,12 @@ let pipelinePromise: Promise<
   (audio: Float32Array, opts: object) => Promise<{ text: string }>
 > | null = null;
 
-function loadPipeline() {
+/**
+ * Load (and cache) the Whisper pipeline. Exported so the Vault's
+ * "prepare this device" flow can pull the model down ahead of first use;
+ * progress is reported in [0, 1].
+ */
+export function loadTranscriber(onProgress?: (progress: number) => void) {
   if (!pipelinePromise) {
     pipelinePromise = (async () => {
       // Dynamic import keeps transformers.js (and its WASM/WebGPU runtime)
@@ -23,7 +28,17 @@ function loadPipeline() {
       const transcribe = await pipeline(
         "automatic-speech-recognition",
         "onnx-community/whisper-base",
-        { dtype: "q8" },
+        {
+          dtype: "q8",
+          progress_callback: (info: {
+            status: string;
+            progress?: number;
+          }) => {
+            if (info.status === "progress" && info.progress != null) {
+              onProgress?.(info.progress / 100);
+            }
+          },
+        },
       );
       return transcribe as unknown as (
         audio: Float32Array,
@@ -83,7 +98,10 @@ export async function startRecording(): Promise<Recording> {
 }
 
 export async function transcribe(blob: Blob): Promise<string> {
-  const [pipe, audio] = await Promise.all([loadPipeline(), decodeTo16kMono(blob)]);
+  const [pipe, audio] = await Promise.all([
+    loadTranscriber(),
+    decodeTo16kMono(blob),
+  ]);
   const result = await pipe(audio, { chunk_length_s: 30 });
   return result.text.trim();
 }

@@ -49,6 +49,10 @@ the owner exports it.
     key stored outside the archive so exports never contain it). The only
     engine where words leave the device, so it alone sits behind the
     conversations consent switch.
+- **Prepare this device** (Vault) downloads every on-device model in one
+  tap — narration voice, dictation, and the interviewer — so nothing has to
+  download mid-conversation and everything keeps working offline. Sequential
+  downloads, per-model progress, already-cached models are skipped.
 
 ## Product principles
 
