@@ -18,7 +18,7 @@ the owner exports it.
 | **Question of the day** | A daily writing prompt from a curated bank — answering takes two minutes |
 | **Capture** | Journals, stories, milestones, and values with dates and tags; dictation via on-device Whisper |
 | **Photo import** | Batch-import photos, auto-placed on the timeline by their EXIF date; stored on-device (IndexedDB) |
-| **Interviewer** | Four engines: Guided (built-in, no AI), on-device Llama 3.2 (WebLLM), Ollama on localhost, or Claude (opt-in, bring-your-own key) |
+| **Interviewer** | The app's capture engine: archive-aware (it hunts timeline gaps, unexplored values, and thin stories), resumable across navigation, and stories save with the date they happened. Four engines: Guided (built-in, no AI), on-device Llama 3.2 (WebLLM), Ollama on localhost, or Claude (opt-in, bring-your-own key) |
 | **Ask** | Ask the archive a question; answers are reconstructed only from recorded memories, with sources cited and a permanent simulation label |
 | **Timeline** | The whole archive in chronological order, filterable by kind |
 | **Autobiography** | Chapters auto-assembled by year from the owner's own words |

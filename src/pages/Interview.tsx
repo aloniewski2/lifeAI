@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { BookOpen, Loader2, MessageCircle, Send, Volume2, VolumeX } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { BookOpen, Loader2, MessageCircle, RotateCcw, Send, Volume2, VolumeX } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "@/components/PageHeader";
 import { DictationButton } from "@/components/DictationButton";
@@ -13,12 +13,30 @@ import {
   ChatTurn,
   EngineId,
   getSavedEngineId,
+  interviewLeads,
   makeEngine,
   ollamaReachable,
   OLLAMA_MODEL,
   saveEngineId,
   webGpuAvailable,
 } from "@/lib/interview";
+
+/**
+ * A conversation in progress survives navigation: it lives in
+ * localStorage until it's saved as a story or explicitly restarted.
+ */
+const SESSION_KEY = "ai-legacy-os/interview-session";
+
+function loadSessionTurns(): ChatTurn[] {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { turns?: ChatTurn[] };
+    return Array.isArray(parsed.turns) ? parsed.turns : [];
+  } catch {
+    return [];
+  }
+}
 
 const ENGINES: {
   id: EngineId;
@@ -151,11 +169,24 @@ function WebGpuGate() {
 
 export default function Interview() {
   const { archive, update } = useArchive();
+  const location = useLocation();
   const [engineId, setEngineId] = useState<EngineId>(getSavedEngineId);
   const [hasKey, setHasKey] = useState(() => Boolean(getApiKey()));
   const [ollamaUp, setOllamaUp] = useState<boolean | null>(null);
   const [progress, setProgress] = useState<{ text: string; value: number } | null>(null);
-  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [turns, setTurns] = useState<ChatTurn[]>(() => {
+    // A question handed over from the dashboard starts a fresh interview;
+    // otherwise resume whatever conversation was in flight.
+    const handedOver = (location.state as { question?: string } | null)
+      ?.question;
+    if (handedOver) {
+      return [{ role: "assistant", content: `Let's start here: ${handedOver}` }];
+    }
+    return loadSessionTurns();
+  });
+  const [storyDate, setStoryDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -198,11 +229,37 @@ export default function Interview() {
     });
   }
 
+  // The engine reads the archive when constructed, so its questions build
+  // on what's already recorded. archiveRef keeps the engine memo stable
+  // across saves (rebuilding it would restart the conversation).
+  const archiveRef = useRef(archive);
+  archiveRef.current = archive;
   const engine = useMemo(
     () =>
-      makeEngine(engineId, (text, value) => setProgress({ text, value })),
+      makeEngine(
+        engineId,
+        (text, value) => setProgress({ text, value }),
+        archiveRef.current,
+      ),
     [engineId],
   );
+  const leads = useMemo(
+    () => interviewLeads(archive, new Date().toISOString().slice(0, 10), 4),
+    [archive],
+  );
+
+  // Persist the conversation so navigating away doesn't lose it.
+  useEffect(() => {
+    try {
+      if (turns.length > 0) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ turns }));
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+      }
+    } catch {
+      // storage full or unavailable — the conversation still works
+    }
+  }, [turns]);
 
   useEffect(() => {
     if (engineId === "ollama") {
@@ -217,11 +274,12 @@ export default function Interview() {
     (engineId === "ollama" && ollamaUp === true) ||
     (engineId === "claude" && archive.consent.conversations && hasKey);
 
-  // (Re)start the conversation whenever a ready engine is selected.
+  // Start the conversation when a ready engine has nothing to resume.
+  const turnsRef = useRef(turns);
+  turnsRef.current = turns;
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || turnsRef.current.length > 0) return;
     let cancelled = false;
-    setTurns([]);
     setSavedTitle(null);
     setError(null);
     setBusy(true);
@@ -244,13 +302,40 @@ export default function Interview() {
     };
   }, [engine, ready]);
 
+  function startOver() {
+    stopSpeaking();
+    setTurns([]);
+    setSavedTitle(null);
+    setError(null);
+    setBusy(true);
+    engine
+      .nextQuestion([])
+      .then((q) => setTurns([{ role: "assistant", content: q }]))
+      .catch(() => setError("The interviewer couldn't start — try again."))
+      .finally(() => {
+        setBusy(false);
+        setProgress(null);
+      });
+  }
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, busy]);
 
   function selectEngine(id: EngineId) {
+    if (id !== engineId) {
+      setTurns([]);
+      setSavedTitle(null);
+      setError(null);
+    }
     setEngineId(id);
     saveEngineId(id);
+  }
+
+  function askLead(question: string) {
+    if (busy) return;
+    stopSpeaking();
+    setTurns((t) => [...t, { role: "assistant", content: question }]);
   }
 
   async function send(text: string) {
@@ -291,7 +376,7 @@ export default function Interview() {
             kind: "story",
             title: draft.title,
             content: draft.story,
-            date: new Date().toISOString().slice(0, 10),
+            date: storyDate,
             tags: ["interview"],
             createdAt: new Date().toISOString(),
           },
@@ -409,6 +494,24 @@ export default function Interview() {
             </p>
           )}
 
+          {leads.length > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-ink-400">Worth asking about:</span>
+              {leads.map((lead) => (
+                <button
+                  key={lead.label}
+                  type="button"
+                  onClick={() => askLead(lead.question)}
+                  disabled={busy}
+                  title={lead.question}
+                  className="rounded-full border border-ink-700 px-2.5 py-1 text-xs text-ink-300 transition-colors hover:border-ink-400 hover:text-ink-100 disabled:opacity-50"
+                >
+                  {lead.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <form
             className="flex gap-3"
             onSubmit={(e) => {
@@ -462,21 +565,42 @@ export default function Interview() {
                     : "Natural voice"}
               </button>
             </div>
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={
-                saving || turns.filter((t) => t.role === "user").length === 0
-              }
-              onClick={saveAsStory}
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <BookOpen className="h-4 w-4" />
-              )}
-              Turn this into a story
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="btn-ghost px-3 py-1.5"
+                onClick={startOver}
+                disabled={busy}
+                aria-label="Start over"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Start over
+              </button>
+              <label className="flex items-center gap-2 text-xs text-ink-400">
+                Happened on
+                <input
+                  type="date"
+                  value={storyDate}
+                  onChange={(e) => setStoryDate(e.target.value)}
+                  className="field w-auto py-1.5 text-xs"
+                />
+              </label>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={
+                  saving || turns.filter((t) => t.role === "user").length === 0
+                }
+                onClick={saveAsStory}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <BookOpen className="h-4 w-4" />
+                )}
+                Turn this into a story
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -25,12 +25,14 @@ function makeClient(): Anthropic {
 }
 
 export class ClaudeEngine implements InterviewEngine {
+  constructor(private system: string = INTERVIEWER_SYSTEM) {}
+
   async nextQuestion(turns: ChatTurn[]): Promise<string> {
     const client = makeClient();
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 300,
-      system: INTERVIEWER_SYSTEM,
+      system: this.system,
       messages:
         turns.length > 0
           ? turns

@@ -85,6 +85,17 @@ export default function Dashboard() {
           <button
             type="button"
             className="btn-ghost"
+            onClick={() =>
+              navigate("/app/interview", {
+                state: { question: prompt.question },
+              })
+            }
+          >
+            Talk it out with the interviewer
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
             onClick={() => setPrompt((p) => anotherPrompt(p))}
           >
             <RefreshCw className="h-4 w-4" />
