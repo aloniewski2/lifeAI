@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import exifr from "exifr";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { CalendarImport } from "@/components/CalendarImport";
 import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
@@ -11,12 +12,13 @@ import { putAudio } from "@/lib/audioStore";
 import { EntryKind, ENTRY_KIND_LABELS } from "@/lib/types";
 import clsx from "clsx";
 
-const CAPTURE_KINDS: (EntryKind | "photo")[] = [
+const CAPTURE_KINDS: (EntryKind | "photo" | "calendar")[] = [
   "journal",
   "story",
   "milestone",
   "value",
   "photo",
+  "calendar",
 ];
 
 const PROMPTS: Record<string, string> = {
@@ -269,7 +271,7 @@ function PhotoImport() {
 export default function Capture() {
   const location = useLocation();
   const prefill = (location.state ?? {}) as CapturePrefill;
-  const [kind, setKind] = useState<EntryKind | "photo">(
+  const [kind, setKind] = useState<EntryKind | "photo" | "calendar">(
     prefill.kind ?? "journal",
   );
 
@@ -293,13 +295,19 @@ export default function Capture() {
                 : "border border-ink-700 text-ink-300 hover:text-ink-100",
             )}
           >
-            {k === "photo" ? "Photos" : ENTRY_KIND_LABELS[k]}
+            {k === "photo"
+              ? "Photos"
+              : k === "calendar"
+                ? "Calendar"
+                : ENTRY_KIND_LABELS[k]}
           </button>
         ))}
       </div>
 
       {kind === "photo" ? (
         <PhotoImport />
+      ) : kind === "calendar" ? (
+        <CalendarImport />
       ) : (
         <TextEntryForm
           key={`${kind}-${prefill.question ?? ""}`}

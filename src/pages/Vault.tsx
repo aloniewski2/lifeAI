@@ -34,7 +34,7 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   {
     key: "calendar",
     label: "Calendar",
-    note: "Roadmap — milestones suggested from events, never auto-added.",
+    note: "Import .ics exports; events become suggestions you review, never auto-added.",
   },
   {
     key: "socialMedia",

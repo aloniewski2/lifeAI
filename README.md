@@ -18,6 +18,7 @@ the owner exports it.
 | **Question of the day** | A daily writing prompt from a curated bank — answering takes two minutes |
 | **Capture** | Journals, stories, milestones, and values with dates and tags; dictation via on-device Whisper |
 | **Photo import** | Batch-import photos, auto-placed on the timeline by their EXIF date; stored on-device (IndexedDB) |
+| **Calendar import** | Drop in an .ics export; events become suggested milestones you review before keeping — recurring events collapse to one suggestion |
 | **Interviewer** | The app's capture engine: archive-aware (it hunts timeline gaps, unexplored values, and thin stories), resumable across navigation, and stories save with the date they happened. Four engines: Guided (built-in, no AI), on-device Llama 3.2 (WebLLM), Ollama on localhost, or Claude (opt-in, bring-your-own key) |
 | **Ask** | Ask the archive a question; answers are reconstructed only from recorded memories, with sources cited and a permanent simulation label |
 | **Timeline** | The whole archive in chronological order, filterable by kind |
@@ -38,6 +39,10 @@ the owner exports it.
 - **Photo import** reads each photo's EXIF capture date client-side
   (`exifr`), downscales it, and stores it in IndexedDB — decades of timeline
   anchors from one multi-select. Gated behind the photos consent switch.
+- **Calendar import** parses .ics exports on-device (`src/lib/ics.ts`, no
+  dependency) into a review list: recurring events collapse to a single
+  suggestion, already-archived events are filtered out, and only checked
+  events become milestones. Gated behind the calendar consent switch.
 - **The interviewer** has four engines, three of them free and fully local:
   - **Guided** (default) — a curated opener plus the follow-up questions a
     good interviewer always asks; the saved story is the speaker's exact
@@ -72,7 +77,7 @@ the owner exports it.
 
 ## Roadmap
 
-- Calendar (.ics) and social-media export importers — suggested entries, reviewed before keeping
+- Social-media export importers — suggested entries, reviewed before keeping
 - AI editing pass that polishes autobiography prose without inventing facts
 - Delivery of future messages to recipients (email / family accounts)
 - Shareable memorial and family archive with per-person access
