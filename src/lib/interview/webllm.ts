@@ -38,11 +38,19 @@ export function loadWebLlm(
 ): Promise<MLCEngine> {
   if (!enginePromise) {
     enginePromise = (async () => {
-      const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
-      const engine = await CreateMLCEngine(WEBLLM_MODEL, {
-        initProgressCallback: (report) =>
-          onProgress(report.text, report.progress),
-      });
+      // The engine runs in a dedicated worker (webllmWorker.ts) so model
+      // compilation and token generation never freeze the page.
+      const { CreateWebWorkerMLCEngine } = await import("@mlc-ai/web-llm");
+      const engine = await CreateWebWorkerMLCEngine(
+        new Worker(new URL("./webllmWorker.ts", import.meta.url), {
+          type: "module",
+        }),
+        WEBLLM_MODEL,
+        {
+          initProgressCallback: (report) =>
+            onProgress(report.text, report.progress),
+        },
+      );
       return engine as unknown as MLCEngine;
     })();
     enginePromise.catch(() => {
