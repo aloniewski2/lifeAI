@@ -31,8 +31,10 @@ the owner exports it.
 - **Prompt of the day** kills the blank page — one curated question, rotated
   deterministically by date.
 - **Voice dictation** runs Whisper (`@huggingface/transformers`) entirely in
-  the browser; the model downloads once (~80MB) and is cached, and audio
-  never leaves the device. Gated behind the voice consent switch.
+  the browser. The model ships with the app in `public/models/` — no runtime
+  download — and audio never leaves the device. Gated behind the voice
+  consent switch. (Workers intercept the libraries' hardcoded huggingface.co
+  URLs and serve the vendored files; see `src/lib/localModels.ts`.)
 - **Photo import** reads each photo's EXIF capture date client-side
   (`exifr`), downscales it, and stores it in IndexedDB — decades of timeline
   anchors from one multi-select. Gated behind the photos consent switch.

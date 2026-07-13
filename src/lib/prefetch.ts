@@ -21,15 +21,17 @@ export function prefetchItems(): PrefetchItem[] {
     {
       key: "voice",
       label: "Narration voice",
-      size: "~86 MB",
-      detail: "Kokoro — reads chapters, letters, and interview questions aloud.",
+      size: "included",
+      detail:
+        "Kokoro ships with the app — reads chapters, letters, and interview questions aloud. Warming it up here makes first playback instant.",
       available: true,
     },
     {
       key: "dictation",
       label: "Dictation",
-      size: "~80 MB",
-      detail: "Whisper — turns your speech into text, on-device.",
+      size: "included",
+      detail:
+        "Whisper ships with the app — turns your speech into text, on-device.",
       available: true,
     },
     {

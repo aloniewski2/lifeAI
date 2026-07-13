@@ -1,7 +1,13 @@
 /// <reference lib="webworker" />
-import { KokoroTTS } from "kokoro-js";
+import { KokoroTTS, env } from "kokoro-js";
+import { installLocalModelFetch } from "./localModels";
 import { splitIntoChunks } from "./textChunks";
 import { wavBlobFrom } from "./wav";
+
+installLocalModelFetch();
+// Model files are same-origin (public/models/); the Cache API layer would
+// bypass the fetch interceptor above, so rely on the plain HTTP cache.
+(env as { useBrowserCache?: boolean }).useBrowserCache = false;
 
 /**
  * Kokoro TTS in a dedicated worker so speech generation never blocks the
@@ -23,10 +29,11 @@ let activeId = 0;
 
 function load(): Promise<KokoroTTS> {
   if (!ttsPromise) {
-    const hasWebGPU = "gpu" in navigator;
+    // q8 + wasm matches the model file vendored in public/models/ — every
+    // device loads the same local file, no runtime download.
     ttsPromise = KokoroTTS.from_pretrained(MODEL_ID, {
-      dtype: hasWebGPU ? "fp32" : "q8",
-      device: hasWebGPU ? "webgpu" : "wasm",
+      dtype: "q8",
+      device: "wasm",
       progress_callback: (info: { status: string; progress?: number }) => {
         if (info.status === "progress" && info.progress != null) {
           self.postMessage({ type: "progress", progress: info.progress / 100 });

@@ -1,5 +1,11 @@
 /// <reference lib="webworker" />
-import { pipeline } from "@huggingface/transformers";
+import { env, pipeline } from "@huggingface/transformers";
+import { installLocalModelFetch } from "./localModels";
+
+installLocalModelFetch();
+// Model files are same-origin (public/models/); the Cache API layer would
+// bypass the fetch interceptor above, so rely on the plain HTTP cache.
+env.useBrowserCache = false;
 
 /**
  * Whisper speech-to-text in a dedicated worker so transcription never
