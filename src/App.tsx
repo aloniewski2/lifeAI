@@ -22,6 +22,7 @@ import Vault from "@/pages/Vault";
 
 // Lazy: keeps the Anthropic SDK out of the main bundle until it's used.
 const Interview = lazy(() => import("@/pages/Interview"));
+const Ask = lazy(() => import("@/pages/Ask"));
 
 function LoadedApp({ initial }: { initial: Archive }) {
   const [archive, setArchive] = useState<Archive>(initial);
@@ -50,6 +51,14 @@ function LoadedApp({ initial }: { initial: Archive }) {
             element={
               <Suspense fallback={null}>
                 <Interview />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/app/ask"
+            element={
+              <Suspense fallback={null}>
+                <Ask />
               </Suspense>
             }
           />

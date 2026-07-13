@@ -31,7 +31,7 @@ export async function ollamaReachable(): Promise<boolean> {
   }
 }
 
-async function chat(
+export async function ollamaChat(
   messages: { role: string; content: string }[],
   maxTokens: number,
 ): Promise<string> {
@@ -53,7 +53,7 @@ async function chat(
 
 export class OllamaEngine implements InterviewEngine {
   async nextQuestion(turns: ChatTurn[]): Promise<string> {
-    return chat(
+    return ollamaChat(
       [
         { role: "system", content: INTERVIEWER_SYSTEM },
         ...(turns.length > 0
@@ -70,7 +70,7 @@ export class OllamaEngine implements InterviewEngine {
   }
 
   async draftStory(turns: ChatTurn[]): Promise<StoryDraft> {
-    const raw = await chat(
+    const raw = await ollamaChat(
       [
         { role: "system", content: DRAFTER_SYSTEM },
         {

@@ -8,6 +8,7 @@ import {
   Lock,
   Mail,
   MessageCircle,
+  MessagesSquare,
   PenLine,
 } from "lucide-react";
 import clsx from "clsx";
@@ -18,6 +19,7 @@ const NAV = [
   { to: "/app/interview", label: "Interview", icon: MessageCircle },
   { to: "/app/timeline", label: "Timeline", icon: Clock },
   { to: "/app/autobiography", label: "Autobiography", icon: BookOpen },
+  { to: "/app/ask", label: "Ask", icon: MessagesSquare },
   { to: "/app/messages", label: "Future messages", icon: Mail },
   { to: "/app/memorial", label: "Memorial", icon: Flame },
   { to: "/app/vault", label: "Vault & privacy", icon: Lock },

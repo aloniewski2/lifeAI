@@ -1,8 +1,9 @@
 /**
  * On-device speech-to-text: records with MediaRecorder, transcribes with
- * Whisper via transformers.js. The model (~80MB, whisper-base) downloads on
- * first use and is cached by the browser; after that everything runs
- * offline. Audio never leaves the device.
+ * Whisper via transformers.js running in a Web Worker — the page stays
+ * responsive during model download and inference. The model (~80MB,
+ * whisper-base) downloads on first use and is cached by the browser;
+ * after that everything runs offline. Audio never leaves the device.
  */
 export type TranscriberStatus =
   | "idle"
@@ -10,46 +11,66 @@ export type TranscriberStatus =
   | "loading-model"
   | "transcribing";
 
-let pipelinePromise: Promise<
-  (audio: Float32Array, opts: object) => Promise<{ text: string }>
-> | null = null;
+type WorkerMessage =
+  | { type: "progress"; progress: number }
+  | { id: number; type: "ready" }
+  | { id: number; type: "text"; text: string }
+  | { id: number; type: "error"; message: string };
 
-/**
- * Load (and cache) the Whisper pipeline. Exported so the Vault's
- * "prepare this device" flow can pull the model down ahead of first use;
- * progress is reported in [0, 1].
- */
-export function loadTranscriber(onProgress?: (progress: number) => void) {
-  if (!pipelinePromise) {
-    pipelinePromise = (async () => {
-      // Dynamic import keeps transformers.js (and its WASM/WebGPU runtime)
-      // out of the main bundle until someone actually records.
-      const { pipeline } = await import("@huggingface/transformers");
-      const transcribe = await pipeline(
-        "automatic-speech-recognition",
-        "onnx-community/whisper-base",
-        {
-          dtype: "q8",
-          progress_callback: (info: {
-            status: string;
-            progress?: number;
-          }) => {
-            if (info.status === "progress" && info.progress != null) {
-              onProgress?.(info.progress / 100);
-            }
-          },
-        },
-      );
-      return transcribe as unknown as (
-        audio: Float32Array,
-        opts: object,
-      ) => Promise<{ text: string }>;
-    })();
-    pipelinePromise.catch(() => {
-      pipelinePromise = null;
+let worker: Worker | null = null;
+let requestSeq = 0;
+let progressListener: ((progress: number) => void) | null = null;
+
+function getWorker(): Worker {
+  if (!worker) {
+    worker = new Worker(new URL("./transcriberWorker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.addEventListener("message", (e: MessageEvent<WorkerMessage>) => {
+      if (e.data.type === "progress") progressListener?.(e.data.progress);
     });
   }
-  return pipelinePromise;
+  return worker;
+}
+
+function request<T>(
+  message: { type: string; audio?: Float32Array },
+  transfer: Transferable[],
+  extract: (msg: WorkerMessage) => T | undefined,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = ++requestSeq;
+    const w = getWorker();
+    const onMessage = (e: MessageEvent<WorkerMessage>) => {
+      const msg = e.data;
+      if (!("id" in msg) || msg.id !== id) return;
+      if (msg.type === "error") {
+        w.removeEventListener("message", onMessage);
+        reject(new Error(msg.message));
+        return;
+      }
+      const value = extract(msg);
+      if (value !== undefined) {
+        w.removeEventListener("message", onMessage);
+        resolve(value);
+      }
+    };
+    w.addEventListener("message", onMessage);
+    w.postMessage({ id, ...message }, transfer);
+  });
+}
+
+/**
+ * Load (and cache) the Whisper pipeline ahead of first use; used by the
+ * Vault's "prepare this device" flow. Progress is reported in [0, 1].
+ */
+export function loadTranscriber(
+  onProgress?: (progress: number) => void,
+): Promise<void> {
+  if (onProgress) progressListener = onProgress;
+  return request({ type: "load" }, [], (msg) =>
+    msg.type === "ready" ? true : undefined,
+  ).then(() => undefined);
 }
 
 /** Decode a recorded blob to the 16kHz mono Float32Array Whisper expects. */
@@ -98,10 +119,8 @@ export async function startRecording(): Promise<Recording> {
 }
 
 export async function transcribe(blob: Blob): Promise<string> {
-  const [pipe, audio] = await Promise.all([
-    loadTranscriber(),
-    decodeTo16kMono(blob),
-  ]);
-  const result = await pipe(audio, { chunk_length_s: 30 });
-  return result.text.trim();
+  const audio = await decodeTo16kMono(blob);
+  return request({ type: "transcribe", audio }, [audio.buffer], (msg) =>
+    msg.type === "text" ? msg.text : undefined,
+  );
 }

@@ -19,6 +19,7 @@ the owner exports it.
 | **Capture** | Journals, stories, milestones, and values with dates and tags; dictation via on-device Whisper |
 | **Photo import** | Batch-import photos, auto-placed on the timeline by their EXIF date; stored on-device (IndexedDB) |
 | **Interviewer** | Four engines: Guided (built-in, no AI), on-device Llama 3.2 (WebLLM), Ollama on localhost, or Claude (opt-in, bring-your-own key) |
+| **Ask** | Ask the archive a question; answers are reconstructed only from recorded memories, with sources cited and a permanent simulation label |
 | **Timeline** | The whole archive in chronological order, filterable by kind |
 | **Autobiography** | Chapters auto-assembled by year from the owner's own words |
 | **Future messages** | Sealed letters that unlock on a chosen date |
@@ -30,8 +31,10 @@ the owner exports it.
 - **Prompt of the day** kills the blank page — one curated question, rotated
   deterministically by date.
 - **Voice dictation** runs Whisper (`@huggingface/transformers`) entirely in
-  the browser; the model downloads once (~80MB) and is cached, and audio
-  never leaves the device. Gated behind the voice consent switch.
+  the browser. The model ships with the app in `public/models/` — no runtime
+  download — and audio never leaves the device. Gated behind the voice
+  consent switch. (Workers intercept the libraries' hardcoded huggingface.co
+  URLs and serve the vendored files; see `src/lib/localModels.ts`.)
 - **Photo import** reads each photo's EXIF capture date client-side
   (`exifr`), downscales it, and stores it in IndexedDB — decades of timeline
   anchors from one multi-select. Gated behind the photos consent switch.
