@@ -1,130 +1,133 @@
 import { Link } from "react-router-dom";
-import {
-  BookOpen,
-  Clock,
-  Feather,
-  Flame,
-  Lock,
-  Mail,
-  MessageCircle,
-  PenLine,
-} from "lucide-react";
+import { DoubleRule, Eyebrow } from "@/components/Letterpress";
 
-const FEATURES = [
+const TOC = [
   {
-    icon: PenLine,
-    title: "Capture what matters",
-    text: "Journals, stories, values, milestones — recorded in minutes, kept for generations.",
+    numeral: "I.",
+    title: "The autobiography",
+    text: "Chapters assembled from what you record, in your own words. You edit; nothing is invented.",
   },
   {
-    icon: Clock,
-    title: "An interactive timeline",
-    text: "Your whole life laid out year by year, searchable and explorable by the people you love.",
+    numeral: "II.",
+    title: "The timeline",
+    text: "A whole life in order — stories, photographs, milestones — for family to walk through.",
   },
   {
-    icon: BookOpen,
-    title: "Your autobiography",
-    text: "Chapters assemble themselves from what you record. You edit; nothing is invented.",
+    numeral: "III.",
+    title: "Letters to the future",
+    text: "Sealed now, delivered on a wedding day, a birthday, a hard year. Wax and all.",
   },
   {
-    icon: Mail,
-    title: "Messages to the future",
-    text: "A letter for a wedding day, a birthday, a hard year. Written now, delivered when it counts.",
-  },
-  {
-    icon: MessageCircle,
-    title: "An AI that remembers like you",
-    text: "One day, family will be able to ask questions and hear answers drawn from your own words — always clearly labeled as a simulation, never a replacement.",
-  },
-  {
-    icon: Flame,
-    title: "A living memorial",
-    text: "A family archive that outlasts any single device, service, or generation.",
+    numeral: "IV.",
+    title: "The memorial",
+    text: "A page worthy of a remembrance, built only from what you chose to leave.",
   },
 ];
 
 const PRINCIPLES = [
   {
+    numeral: "i",
     title: "Local-first",
     text: "Your archive lives on your device. Nothing leaves it unless you export it yourself.",
   },
   {
+    numeral: "ii",
     title: "Consent per source",
-    text: "Photos, voice, conversations, email — each source is off until you turn it on, and you can turn it off again.",
+    text: "Photos, voice, calendars — each source is off until you turn it on, and you can turn it off again.",
   },
   {
+    numeral: "iii",
     title: "A simulation, not a person",
-    text: "Anything generated from your archive is labeled as a reconstruction. The AI speaks from your words; it is not you.",
+    text: "Anything generated from your archive is labeled as a reconstruction. It speaks from your words; it is not you.",
   },
   {
+    numeral: "iv",
     title: "Yours to delete",
-    text: "One button wipes everything, permanently. No retention, no dark patterns.",
+    text: "One action wipes everything, permanently. No retention, no dark patterns.",
   },
 ];
 
 export default function Landing() {
   return (
-    <div className="min-h-screen">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <Feather className="h-5 w-5 text-ember-400" />
-          <span className="font-serif text-lg text-ink-50">AI Legacy OS</span>
-        </div>
-        <Link to="/app" className="btn-ghost">
+    <div className="min-h-screen bg-paper-50">
+      <header className="mx-auto flex max-w-[1080px] items-baseline justify-between px-6 py-7 sm:px-8">
+        <span className="font-serif text-[15px] uppercase tracking-[0.22em] text-ink-900">
+          AI&nbsp;Legacy&nbsp;OS
+        </span>
+        <Link
+          to="/app"
+          className="border-b border-paper-200 pb-[3px] text-[13px] uppercase tracking-[0.08em] text-ink-500 hover:text-ink-900"
+        >
           Open your archive
         </Link>
       </header>
 
-      <section className="mx-auto max-w-3xl px-6 pb-20 pt-24 text-center">
-        <h1 className="font-serif text-5xl leading-tight text-ink-50">
-          Everyone dies.
-          <br />
-          Not everyone has to disappear.
+      <section className="mx-auto max-w-[760px] px-6 pb-16 pt-14 text-center sm:px-8 sm:pb-[72px] sm:pt-[90px]">
+        <Eyebrow>The archive of a life</Eyebrow>
+        <h1 className="mx-auto mt-6 max-w-[640px] font-serif text-4xl font-normal leading-[1.12] text-ink-900 [text-wrap:balance] sm:text-[62px] sm:leading-[1.08]">
+          Everyone dies. Not everyone has to disappear.
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-300">
-          AI Legacy OS quietly gathers your life — your words, your stories,
-          your values — and turns it into something your family can hold onto:
-          an autobiography, a timeline, letters to the future, a memorial that
-          lasts.
+        <p className="mx-auto mt-6 max-w-[460px] text-[15px] leading-[1.7] text-ink-500 sm:text-[17px]">
+          What you write here becomes a book your family keeps — chapters, a
+          timeline, letters that wait for their day. It reads like one from the
+          first page.
         </p>
-        <div className="mt-10 flex justify-center gap-4">
-          <Link to="/app/capture" className="btn-primary">
-            <PenLine className="h-4 w-4" />
-            Start your first entry
+        <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-[26px]">
+          <Link to="/app" className="btn-ink w-full sm:w-auto">
+            Begin your archive
           </Link>
-          <Link to="/app" className="btn-ghost">
-            Explore the OS
-          </Link>
+          <a
+            href="#privacy"
+            className="border-b border-paper-200 pb-0.5 text-sm text-ink-500 hover:text-ink-900"
+          >
+            How privacy works ↓
+          </a>
         </div>
+        <DoubleRule width={100} className="mt-16" />
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 pb-20">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="card">
-              <Icon className="h-5 w-5 text-ember-400" />
-              <h3 className="mt-3 font-serif text-lg text-ink-50">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-300">
-                {text}
-              </p>
+      <section className="mx-auto max-w-[720px] px-6 pb-[88px] sm:px-8">
+        <p className="mb-[26px] text-center font-serif text-[22px] italic text-ink-900">
+          What your family will be handed
+        </p>
+        <div className="flex flex-col">
+          {TOC.map(({ numeral, title, text }) => (
+            <div
+              key={numeral}
+              className="flex items-baseline gap-4 border-t border-paper-200 px-2 py-5 sm:gap-[22px]"
+            >
+              <span className="w-8 shrink-0 font-serif text-[17px] text-wax-600 sm:w-10">
+                {numeral}
+              </span>
+              <div className="flex-1">
+                <h3 className="font-serif text-[19px] font-medium text-ink-900 sm:text-[21px]">
+                  {title}
+                </h3>
+                <p className="mt-[5px] max-w-[480px] text-sm leading-[1.65] text-ink-500">
+                  {text}
+                </p>
+              </div>
             </div>
           ))}
         </div>
+        <div className="border-t border-paper-200" />
       </section>
 
-      <section className="border-t border-ink-800 bg-ink-900/50">
-        <div className="mx-auto max-w-5xl px-6 py-16">
-          <div className="mb-8 flex items-center gap-2">
-            <Lock className="h-5 w-5 text-ember-400" />
-            <h2 className="font-serif text-2xl text-ink-50">
-              Privacy is the product
-            </h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            {PRINCIPLES.map(({ title, text }) => (
-              <div key={title}>
-                <h3 className="text-sm font-medium text-ember-300">{title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-ink-300">
+      <section id="privacy" className="bg-ink-950 px-6 pb-[84px] pt-[76px] sm:px-8">
+        <div className="mx-auto max-w-[720px]">
+          <Eyebrow dark className="text-center">
+            Privacy is the product
+          </Eyebrow>
+          <p className="mx-auto mt-[18px] max-w-[460px] text-center font-serif text-[22px] leading-[1.4] text-parch-100 sm:text-2xl">
+            Four promises, kept in the code — not the terms of service.
+          </p>
+          <div className="mt-11 grid gap-9 sm:grid-cols-2 sm:gap-x-12">
+            {PRINCIPLES.map(({ numeral, title, text }) => (
+              <div key={numeral}>
+                <p className="font-serif text-base text-wax-400">
+                  {numeral}. <span className="text-parch-100">{title}</span>
+                </p>
+                <p className="mt-2 text-sm leading-[1.7] text-parch-300">
                   {text}
                 </p>
               </div>
@@ -133,8 +136,10 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="mx-auto max-w-5xl px-6 py-10 text-center text-xs text-ink-400">
-        A life is worth keeping. AI Legacy OS — early preview, local-first.
+      <footer className="bg-paper-50 px-6 pb-24 pt-[34px] text-center">
+        <p className="font-serif text-sm italic text-ink-400">
+          A life is worth keeping.
+        </p>
       </footer>
     </div>
   );

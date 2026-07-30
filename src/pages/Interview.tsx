@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Loader2, MessageCircle, RotateCcw, Send, Volume2, VolumeX } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import clsx from "clsx";
-import { PageHeader } from "@/components/PageHeader";
 import { DictationButton } from "@/components/DictationButton";
+import { Eyebrow } from "@/components/Letterpress";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
 import { getApiKey, setApiKey } from "@/lib/apiKey";
@@ -42,45 +42,29 @@ const ENGINES: {
   id: EngineId;
   label: string;
   badge: string;
-  blurb: string;
 }[] = [
-  {
-    id: "guided",
-    label: "Guided",
-    badge: "Built-in · private",
-    blurb:
-      "Curated questions and follow-ups, no AI. Your story is saved in your exact words. Works everywhere, instantly.",
-  },
+  { id: "guided", label: "Guided", badge: "Built-in, no AI — private" },
   {
     id: "webllm",
     label: "On-device AI",
-    badge: "~880MB download · private",
-    blurb:
-      "Llama 3.2 runs inside your browser (WebGPU). One-time download, then it works offline — nothing ever leaves this device.",
+    badge: "~880MB one-time download — private",
   },
   {
     id: "ollama",
     label: "Ollama",
-    badge: "Your machine · private",
-    blurb: `Uses an Ollama server on this computer (model "${OLLAMA_MODEL}"). Free and open source; conversations stay on localhost.`,
+    badge: `Your machine ("${OLLAMA_MODEL}") — private`,
   },
-  {
-    id: "claude",
-    label: "Claude",
-    badge: "Cloud · your API key",
-    blurb:
-      "The highest-quality interviewer. The one option where messages leave the device — sent to Anthropic's API with your own key.",
-  },
+  { id: "claude", label: "Claude", badge: "Cloud — your own API key" },
 ];
 
 function ClaudeConsentGate() {
   const { update } = useArchive();
   return (
-    <div className="card">
-      <h2 className="font-serif text-lg text-ink-50">
+    <div className="card mx-auto max-w-xl">
+      <h2 className="font-serif text-lg text-parch-100">
         Claude sends words off-device
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+      <p className="mt-2 text-sm leading-relaxed text-parch-300">
         Unlike the other interviewers, Claude sends what you type in this
         conversation to Anthropic's API. Nothing else in your archive is sent
         — only this conversation, only while you use it. The local engines
@@ -104,9 +88,9 @@ function ClaudeConsentGate() {
 
 function KeyGate({ onSaved }: { onSaved: () => void }) {
   return (
-    <div className="card">
-      <h2 className="font-serif text-lg text-ink-50">Bring your own key</h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+    <div className="card mx-auto max-w-xl">
+      <h2 className="font-serif text-lg text-parch-100">Bring your own key</h2>
+      <p className="mt-2 text-sm leading-relaxed text-parch-300">
         Claude runs with your own Anthropic API key. The key is stored only in
         this browser and is never included in archive exports. Get one at
         console.anthropic.com — or pick a free local engine above.
@@ -115,7 +99,9 @@ function KeyGate({ onSaved }: { onSaved: () => void }) {
         className="mt-4 flex gap-3"
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
-          const key = String(new FormData(e.currentTarget).get("key") ?? "").trim();
+          const key = String(
+            new FormData(e.currentTarget).get("key") ?? "",
+          ).trim();
           if (!key) return;
           setApiKey(key);
           onSaved();
@@ -138,15 +124,15 @@ function KeyGate({ onSaved }: { onSaved: () => void }) {
 
 function OllamaGate() {
   return (
-    <div className="card">
-      <h2 className="font-serif text-lg text-ink-50">
+    <div className="card mx-auto max-w-xl">
+      <h2 className="font-serif text-lg text-parch-100">
         Can't reach Ollama on this machine
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+      <p className="mt-2 text-sm leading-relaxed text-parch-300">
         Install Ollama from ollama.com (free, open source), pull a model, and
         allow this app's origin, then reload:
       </p>
-      <pre className="mt-3 overflow-x-auto rounded-md bg-ink-950 p-3 text-xs text-ink-200">
+      <pre className="mt-3 overflow-x-auto rounded-[3px] bg-ink-950 p-3 text-xs text-parch-200">
         {`ollama pull ${OLLAMA_MODEL}\nOLLAMA_ORIGINS=${window.location.origin} ollama serve`}
       </pre>
     </div>
@@ -155,16 +141,155 @@ function OllamaGate() {
 
 function WebGpuGate() {
   return (
-    <div className="card">
-      <h2 className="font-serif text-lg text-ink-50">
+    <div className="card mx-auto max-w-xl">
+      <h2 className="font-serif text-lg text-parch-100">
         This browser can't run on-device AI
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-300">
+      <p className="mt-2 text-sm leading-relaxed text-parch-300">
         The on-device interviewer needs WebGPU (Chrome or Edge 113+). Pick the
         Guided engine — it works everywhere — or use Ollama.
       </p>
     </div>
   );
+}
+
+/** The interviewer's presence: a candle, not a face. */
+function Candle({ active }: { active: boolean }) {
+  return (
+    <div className="candle-anim relative mt-9 flex h-[210px] w-[200px] justify-center">
+      <div
+        className="absolute rounded-full"
+        style={{
+          top: 0,
+          left: "50%",
+          marginLeft: -95,
+          width: 190,
+          height: 190,
+          background:
+            "radial-gradient(circle, rgba(224,164,88,0.32), rgba(224,164,88,0) 70%)",
+          animation: active
+            ? "haloTalk 0.9s ease-in-out infinite"
+            : "haloBreath 4.5s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute"
+        style={{ bottom: 58, left: "50%", marginLeft: -22 }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 78,
+            borderRadius: "50%",
+            filter: "blur(6px)",
+            background:
+              "radial-gradient(circle at 50% 65%, rgba(224,164,88,0.9), rgba(224,164,88,0) 70%)",
+            transformOrigin: "50% 100%",
+            animation: active
+              ? "flameFlick 0.42s ease-in-out infinite"
+              : "flameSway 3.2s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 13,
+            bottom: 12,
+            width: 18,
+            height: 34,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 50% 60%, #fff7e0, rgba(255,247,224,0) 75%)",
+            transformOrigin: "50% 100%",
+            animation: active
+              ? "flameFlick 0.3s ease-in-out infinite"
+              : "flameSway 2.6s ease-in-out infinite",
+          }}
+        />
+      </div>
+      <div
+        className="absolute"
+        style={{
+          bottom: 24,
+          left: "50%",
+          width: 30,
+          marginLeft: -15,
+          height: 40,
+          background: "linear-gradient(#efe6d2, #d9cbae)",
+          borderRadius: "4px 4px 2px 2px",
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          bottom: 18,
+          left: "50%",
+          width: 74,
+          marginLeft: -37,
+          height: 7,
+          background: "#2c261e",
+          borderRadius: "50%",
+        }}
+      />
+    </div>
+  );
+}
+
+const BAR_HEIGHTS = [10, 16, 22, 26, 22, 16, 10];
+
+function VoiceBars({ active }: { active: boolean }) {
+  return (
+    <div className="candle-anim mt-1.5 flex h-[26px] items-center gap-1">
+      {BAR_HEIGHTS.map((h, i) => (
+        <div
+          key={i}
+          className={clsx(
+            "w-[3px] rounded-full",
+            active ? "bg-candle-400" : "bg-ink-700",
+          )}
+          style={{
+            height: h,
+            transform: active ? undefined : "scaleY(0.3)",
+            transformOrigin: "center",
+            animation: active
+              ? `barTalk ${0.7 + (i % 3) * 0.15}s ease-in-out ${i * 0.08}s infinite`
+              : undefined,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const reducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Wall-clock typewriter at 40cps — dropped frames jump ahead, never lag. */
+function useTypewriter(text: string): { shown: string; typing: boolean } {
+  const [chars, setChars] = useState(() => text.length);
+
+  useEffect(() => {
+    if (!text || reducedMotion()) {
+      setChars(text.length);
+      return;
+    }
+    setChars(0);
+    const startTs = Date.now();
+    const CPS = 40;
+    const timer = window.setInterval(() => {
+      const n = Math.floor(((Date.now() - startTs) / 1000) * CPS);
+      if (n >= text.length) {
+        setChars(text.length);
+        window.clearInterval(timer);
+      } else {
+        setChars(n);
+      }
+    }, 90);
+    return () => window.clearInterval(timer);
+  }, [text]);
+
+  return { shown: text.slice(0, chars), typing: chars < text.length };
 }
 
 export default function Interview() {
@@ -173,14 +298,19 @@ export default function Interview() {
   const [engineId, setEngineId] = useState<EngineId>(getSavedEngineId);
   const [hasKey, setHasKey] = useState(() => Boolean(getApiKey()));
   const [ollamaUp, setOllamaUp] = useState<boolean | null>(null);
-  const [progress, setProgress] = useState<{ text: string; value: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    text: string;
+    value: number;
+  } | null>(null);
   const [turns, setTurns] = useState<ChatTurn[]>(() => {
     // A question handed over from the dashboard starts a fresh interview;
     // otherwise resume whatever conversation was in flight.
     const handedOver = (location.state as { question?: string } | null)
       ?.question;
     if (handedOver) {
-      return [{ role: "assistant", content: `Let's start here: ${handedOver}` }];
+      return [
+        { role: "assistant", content: `Let's start here: ${handedOver}` },
+      ];
     }
     return loadSessionTurns();
   });
@@ -197,7 +327,6 @@ export default function Interview() {
   );
   const [voiceProgress, setVoiceProgress] = useState<number | null>(null);
   const takesRef = useRef<Blob[]>([]);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Speak each new question with the on-device natural voice (Kokoro).
   // The first use downloads the ~86MB voice model, then it's cached.
@@ -318,10 +447,6 @@ export default function Interview() {
       });
   }
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns, busy]);
-
   function selectEngine(id: EngineId) {
     if (id !== engineId) {
       setTurns([]);
@@ -397,213 +522,248 @@ export default function Interview() {
 
   const current = ENGINES.find((e) => e.id === engineId)!;
 
-  return (
-    <div>
-      <PageHeader
-        title="Interviewer"
-        subtitle="Talking beats a blank page. Pick an interviewer — three of the four are free and fully private — answer one question at a time, then turn the conversation into a story."
-      />
+  // The candle speaks the latest question; earlier exchanges become transcript.
+  const lastAssistantIndex = turns.reduce(
+    (acc, t, i) => (t.role === "assistant" ? i : acc),
+    -1,
+  );
+  const question =
+    lastAssistantIndex >= 0 ? turns[lastAssistantIndex].content : "";
+  const { shown, typing } = useTypewriter(question);
+  const candleActive = typing || busy;
 
-      <div className="mb-2 flex flex-wrap gap-2">
-        {ENGINES.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => selectEngine(e.id)}
-            className={clsx(
-              "rounded-md px-3 py-1.5 text-sm transition-colors",
-              engineId === e.id
-                ? "bg-ember-500 text-ink-950"
-                : "border border-ink-700 text-ink-300 hover:text-ink-100",
-            )}
-          >
-            {e.label}
-            <span
+  const transcript: { q: string; a: string }[] = [];
+  for (let i = 0; i < turns.length; i++) {
+    if (turns[i].role === "user") {
+      transcript.push({
+        q:
+          i > 0 && turns[i - 1].role === "assistant"
+            ? turns[i - 1].content
+            : "",
+        a: turns[i].content,
+      });
+    }
+  }
+
+  const gate =
+    engineId === "claude" && !archive.consent.conversations ? (
+      <ClaudeConsentGate />
+    ) : engineId === "claude" && !hasKey ? (
+      <KeyGate onSaved={() => setHasKey(true)} />
+    ) : engineId === "webllm" && !webGpuAvailable() ? (
+      <WebGpuGate />
+    ) : engineId === "ollama" && ollamaUp === false ? (
+      <OllamaGate />
+    ) : engineId === "ollama" && ollamaUp === null ? (
+      <div className="card mx-auto flex max-w-xl items-center gap-3 text-sm text-parch-300">
+        <Loader2 className="h-4 w-4 animate-spin" /> Looking for Ollama on
+        localhost…
+      </div>
+    ) : null;
+
+  return (
+    <div
+      className="min-h-screen bg-ink-950 px-5 pb-40 pt-12 sm:px-8 sm:pt-16"
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse 900px 520px at 50% 220px, rgba(224,164,88,0.07), transparent 70%)",
+      }}
+    >
+      <div className="mx-auto flex max-w-[640px] flex-col items-center">
+        <Eyebrow dark>The interview</Eyebrow>
+
+        <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-1.5">
+          {ENGINES.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => selectEngine(e.id)}
+              title={e.badge}
               className={clsx(
-                "ml-2 text-xs",
-                engineId === e.id ? "text-ink-800" : "text-ink-400",
+                "pb-0.5 text-xs uppercase tracking-[0.12em] transition-colors",
+                engineId === e.id
+                  ? "border-b border-wax-400 text-wax-400"
+                  : "border-b border-transparent text-ink-400 hover:text-parch-300",
               )}
             >
-              {e.badge}
-            </span>
-          </button>
-        ))}
-      </div>
-      <p className="mb-6 max-w-2xl text-xs leading-relaxed text-ink-400">
-        {current.blurb}
-      </p>
-
-      {engineId === "claude" && !archive.consent.conversations ? (
-        <ClaudeConsentGate />
-      ) : engineId === "claude" && !hasKey ? (
-        <KeyGate onSaved={() => setHasKey(true)} />
-      ) : engineId === "webllm" && !webGpuAvailable() ? (
-        <WebGpuGate />
-      ) : engineId === "ollama" && ollamaUp === false ? (
-        <OllamaGate />
-      ) : engineId === "ollama" && ollamaUp === null ? (
-        <div className="card flex items-center gap-3 text-sm text-ink-300">
-          <Loader2 className="h-4 w-4 animate-spin" /> Looking for Ollama on
-          localhost…
-        </div>
-      ) : (
-        <div className="card flex min-h-[24rem] flex-col">
-          <div className="flex-1 space-y-4 overflow-y-auto pb-4">
-            {turns.map((turn, i) => (
-              <div
-                key={i}
-                className={
-                  turn.role === "assistant"
-                    ? "flex items-start gap-3"
-                    : "flex justify-end"
-                }
-              >
-                {turn.role === "assistant" && (
-                  <MessageCircle className="mt-1 h-4 w-4 shrink-0 text-ember-400" />
-                )}
-                <p
-                  className={
-                    turn.role === "assistant"
-                      ? "max-w-prose text-sm leading-relaxed text-ink-100"
-                      : "max-w-prose rounded-lg bg-ink-800 px-3 py-2 text-sm leading-relaxed text-ink-100"
-                  }
-                >
-                  {turn.content}
-                </p>
-              </div>
-            ))}
-            {busy && (
-              <div className="flex items-center gap-3 text-xs text-ink-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {progress
-                  ? `${progress.text} ${Math.round(progress.value * 100)}%`
-                  : null}
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
-          {savedTitle && (
-            <p className="mb-2 text-sm text-ember-300">
-              Saved "{savedTitle}" to your archive —{" "}
-              <Link to="/app/timeline" className="underline">
-                see it on the timeline
-              </Link>
-              .
-            </p>
-          )}
-
-          {leads.length > 0 && (
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-ink-400">Worth asking about:</span>
-              {leads.map((lead) => (
-                <button
-                  key={lead.label}
-                  type="button"
-                  onClick={() => askLead(lead.question)}
-                  disabled={busy}
-                  title={lead.question}
-                  className="rounded-full border border-ink-700 px-2.5 py-1 text-xs text-ink-300 transition-colors hover:border-ink-400 hover:text-ink-100 disabled:opacity-50"
-                >
-                  {lead.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <form
-            className="flex gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              send(input);
-            }}
-          >
-            <input
-              className="field flex-1"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Speak or type — you can edit your answer here before sending."
-            />
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={busy || !input.trim()}
-              aria-label="Send answer"
-            >
-              <Send className="h-4 w-4" />
+              {e.label}
             </button>
-          </form>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <DictationButton
-                inlineConsent
-                label="Answer by voice"
-                stopLabel="Stop & review"
-                disabled={busy}
-                onText={(text, audio) => {
-                  setInput((v) => (v ? `${v.trimEnd()} ${text}` : text));
-                  takesRef.current.push(audio);
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-ink-400">{current.badge}</p>
+
+        {gate ? (
+          <div className="mt-12 w-full">{gate}</div>
+        ) : (
+          <>
+            <Candle active={candleActive} />
+            <VoiceBars active={candleActive} />
+
+            <div className="mt-7 min-h-[108px] text-center">
+              <p className="mx-auto max-w-[540px] font-serif text-xl italic leading-[1.5] text-parch-100 [text-wrap:balance] sm:text-[27px]">
+                {shown}
+                {typing && (
+                  <span
+                    className="text-candle-400"
+                    style={{ animation: "caretBlink 0.9s step-end infinite" }}
+                  >
+                    |
+                  </span>
+                )}
+                {busy && !typing && (
+                  <span className="text-sm not-italic text-ink-400">
+                    {progress
+                      ? `${progress.text} ${Math.round(progress.value * 100)}%`
+                      : "…"}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <form
+              className="mt-6 w-full max-w-[560px] bg-paper-50 px-6 py-[22px] shadow-sheet-dark sm:px-[26px]"
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+            >
+              <textarea
+                rows={3}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Answer the way you'd tell it at the kitchen table…"
+                className="field-paper resize-none text-[17px] leading-[1.7] text-[#2e2921]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(input);
+                  }
                 }}
               />
+              <div className="mt-2 flex items-center justify-between gap-3.5 border-t border-paper-200 pt-3.5">
+                <DictationButton
+                  inlineConsent
+                  variant="letterpress"
+                  label="Dictate instead"
+                  stopLabel="Stop & review"
+                  disabled={busy}
+                  onText={(text, audio) => {
+                    setInput((v) => (v ? `${v.trimEnd()} ${text}` : text));
+                    takesRef.current.push(audio);
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={busy || !input.trim()}
+                  className="btn-ink px-[22px] py-3 text-sm"
+                >
+                  That's my answer
+                </button>
+              </div>
+            </form>
+
+            {error && <p className="mt-4 text-sm text-wax-400">{error}</p>}
+            {savedTitle && (
+              <p className="mt-4 text-sm text-parch-200">
+                Saved "{savedTitle}" to your archive —{" "}
+                <Link
+                  to="/app/timeline"
+                  className="text-candle-400 underline hover:text-parch-100"
+                >
+                  see it on the timeline
+                </Link>
+                .
+              </p>
+            )}
+
+            {leads.length > 0 && (
+              <div className="mt-10 text-center">
+                <p className="mb-3.5 text-[11px] uppercase tracking-[0.24em] text-[#6b5f4e]">
+                  Worth asking about
+                </p>
+                <div className="flex max-w-[560px] flex-wrap justify-center gap-2.5">
+                  {leads.map((lead) => (
+                    <button
+                      key={lead.label}
+                      type="button"
+                      onClick={() => askLead(lead.question)}
+                      disabled={busy}
+                      title={lead.question}
+                      className="rounded-full border border-ink-700 px-[18px] py-2.5 font-serif text-[15px] italic text-parch-200 transition-colors hover:border-parch-300 hover:text-parch-100 disabled:opacity-50"
+                    >
+                      {lead.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs uppercase tracking-[0.14em]">
               <button
                 type="button"
                 onClick={toggleReadAloud}
-                className="btn-ghost px-3 py-1.5"
                 aria-pressed={readAloud}
-                aria-label="Natural voice"
-              >
-                {readAloud ? (
-                  <Volume2 className="h-4 w-4" />
-                ) : (
-                  <VolumeX className="h-4 w-4" />
+                className={clsx(
+                  "transition-colors",
+                  readAloud
+                    ? "text-candle-400"
+                    : "text-ink-400 hover:text-parch-300",
                 )}
+              >
                 {voiceProgress != null
-                  ? `Downloading voice… ${Math.round(voiceProgress * 100)}%`
+                  ? `Voice… ${Math.round(voiceProgress * 100)}%`
                   : readAloud
-                    ? "Natural voice on"
-                    : "Natural voice"}
+                    ? "♪ Voice on"
+                    : "♪ Voice off"}
               </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="btn-ghost px-3 py-1.5"
                 onClick={startOver}
                 disabled={busy}
-                aria-label="Start over"
+                className="text-ink-400 transition-colors hover:text-parch-300 disabled:opacity-50"
               >
-                <RotateCcw className="h-4 w-4" />
                 Start over
               </button>
-              <label className="flex items-center gap-2 text-xs text-ink-400">
+              <label className="flex items-center gap-2 text-ink-400">
                 Happened on
                 <input
                   type="date"
                   value={storyDate}
                   onChange={(e) => setStoryDate(e.target.value)}
-                  className="field w-auto py-1.5 text-xs"
+                  className="field w-auto py-1 text-xs normal-case tracking-normal"
                 />
               </label>
               <button
                 type="button"
-                className="btn-ghost"
                 disabled={
                   saving || turns.filter((t) => t.role === "user").length === 0
                 }
                 onClick={saveAsStory}
+                className="text-wax-400 transition-colors hover:text-parch-100 disabled:opacity-40"
               >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <BookOpen className="h-4 w-4" />
-                )}
-                Turn this into a story
+                {saving ? "Binding…" : "Turn this into a story"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+
+            {transcript.length > 0 && (
+              <div className="mt-14 flex w-full max-w-[560px] flex-col gap-[22px] border-t border-ink-800 pt-[26px]">
+                {transcript.map((t, i) => (
+                  <div key={i}>
+                    {t.q && (
+                      <p className="font-serif text-[15px] italic text-[#8a7c65]">
+                        {t.q}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-sm leading-[1.7] text-parch-200">
+                      {t.a}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

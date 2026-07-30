@@ -4,21 +4,210 @@
 
 @layer base {
   body {
-    @apply bg-ink-950 text-ink-100 antialiased;
+    @apply bg-ink-950 text-parch-200 antialiased;
   }
 }
 
 @layer components {
+  /* Study (dark) utility surfaces — forms, settings, gates. */
   .field {
-    @apply w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-400 focus:border-ember-500 focus:outline-none;
+    @apply w-full rounded-[3px] border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-parch-100 placeholder:text-stone-400 focus:border-wax-600 focus:outline-none;
   }
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 transition-colors hover:bg-ember-400 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-[3px] bg-wax-600 px-4 py-2 text-sm font-medium text-paper-50 transition-colors hover:bg-wax-700 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md border border-ink-700 px-4 py-2 text-sm text-ink-200 transition-colors hover:border-ink-400 hover:text-ink-50;
+    @apply inline-flex items-center gap-2 rounded-[3px] border border-ink-700 px-4 py-2 text-sm text-parch-200 transition-colors hover:border-parch-300 hover:text-parch-100;
   }
   .card {
-    @apply rounded-lg border border-ink-800 bg-ink-900 p-5;
+    @apply rounded-md border border-ink-800 bg-ink-900 p-5;
+  }
+
+  /* Letterpress shared pieces. */
+  .eyebrow {
+    @apply text-xs uppercase tracking-[0.28em];
+  }
+  .btn-ink {
+    @apply inline-flex items-center justify-center rounded-[3px] bg-ink-900 px-7 py-[15px] text-[15px] font-medium text-paper-50 transition-colors hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-wax {
+    @apply inline-flex items-center gap-2.5 rounded-[3px] bg-wax-600 px-[26px] py-3.5 text-[15px] font-medium text-paper-50 transition-colors hover:bg-wax-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  /* Borderless serif inputs on paper (the letter, the epitaph). */
+  .field-paper {
+    @apply w-full border-none bg-transparent font-serif text-ink-900 outline-none placeholder:text-stone-400;
+  }
+}
+
+/* Ornamental double rule: two hairlines 3px apart. */
+.double-rule {
+  border-top: 1px solid #d9d0bc;
+}
+.double-rule::after {
+  content: "";
+  display: block;
+  border-top: 1px solid #d9d0bc;
+  margin-top: 3px;
+}
+.double-rule-strong {
+  border-top: 1px solid #c9bfa8;
+}
+.double-rule-strong::after {
+  content: "";
+  display: block;
+  border-top: 1px solid #c9bfa8;
+  margin-top: 3px;
+}
+
+/* Matted-photo placeholder weave, used when a photo is still loading. */
+.photo-weave {
+  background: repeating-linear-gradient(
+    45deg,
+    #e2d9c4,
+    #e2d9c4 10px,
+    #e8e0cc 10px,
+    #e8e0cc 20px
+  );
+}
+
+/* Seal & ceremony */
+@keyframes waxPress {
+  0% {
+    transform: scale(2.4) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.92) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+@keyframes riseIn {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes dimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The candle (Interview) */
+@keyframes flameSway {
+  0% {
+    transform: translateX(-2px) scaleY(1) rotate(-2deg);
+  }
+  30% {
+    transform: translateX(2px) scaleY(1.06) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-1px) scaleY(0.96) rotate(-1deg);
+  }
+  100% {
+    transform: translateX(-2px) scaleY(1) rotate(-2deg);
+  }
+}
+@keyframes flameFlick {
+  0% {
+    transform: translateX(1px) scaleY(0.94) scaleX(1.04) rotate(2deg);
+    opacity: 0.9;
+  }
+  25% {
+    transform: translateX(-3px) scaleY(1.12) scaleX(0.94) rotate(-3deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(2px) scaleY(0.9) scaleX(1.06) rotate(3deg);
+    opacity: 0.85;
+  }
+  75% {
+    transform: translateX(-2px) scaleY(1.16) scaleX(0.92) rotate(-2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(1px) scaleY(0.94) scaleX(1.04) rotate(2deg);
+    opacity: 0.9;
+  }
+}
+@keyframes haloBreath {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+}
+@keyframes haloTalk {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  45% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+@keyframes caretBlink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes barTalk {
+  0% {
+    transform: scaleY(0.25);
+  }
+  25% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.4);
+  }
+  75% {
+    transform: scaleY(0.85);
+  }
+  100% {
+    transform: scaleY(0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candle-anim,
+  .candle-anim * {
+    animation: none !important;
   }
 }

@@ -24,20 +24,40 @@ export function DictationButton({
   label = "Dictate",
   stopLabel = "Stop & transcribe",
   disabled = false,
+  variant = "study",
 }: {
   onText: (text: string, audio: Blob) => void;
   inlineConsent?: boolean;
   label?: string;
   stopLabel?: string;
   disabled?: boolean;
+  /** "letterpress" renders the ● small-caps wax text button for paper cards. */
+  variant?: "study" | "letterpress";
 }) {
   const { archive, update } = useArchive();
   const [status, setStatus] = useState<TranscriberStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const recordingRef = useRef<Recording | null>(null);
+  const letterpress = variant === "letterpress";
+  const lpBase =
+    "inline-flex items-center gap-2 p-1 text-xs uppercase tracking-[0.14em] transition-colors";
 
   if (!archive.consent.voice) {
     if (inlineConsent) {
+      if (letterpress) {
+        return (
+          <button
+            type="button"
+            className={`${lpBase} text-wax-600 hover:text-ink-900`}
+            onClick={() =>
+              update((a) => ({ ...a, consent: { ...a.consent, voice: true } }))
+            }
+            title="Recording and transcription stay on this device"
+          >
+            ●&nbsp;&nbsp;Enable dictation
+          </button>
+        );
+      }
       return (
         <button
           type="button"
@@ -92,6 +112,40 @@ export function DictationButton({
   }
 
   const busy = status === "loading-model" || status === "transcribing";
+
+  if (letterpress) {
+    return (
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={busy || disabled}
+          className={
+            status === "recording"
+              ? `${lpBase} text-wax-600`
+              : `${lpBase} text-wax-600 hover:text-ink-900 disabled:opacity-50`
+          }
+          aria-label={status === "recording" ? "Stop dictation" : "Dictate"}
+        >
+          {status === "recording" ? (
+            <>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-wax-600" />
+              {stopLabel}
+            </>
+          ) : busy ? (
+            "Transcribing…"
+          ) : (
+            <>●&nbsp;&nbsp;{label}</>
+          )}
+        </button>
+        {error && (
+          <span className="truncate text-xs normal-case tracking-normal text-wax-600">
+            {error}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3">

@@ -7,6 +7,16 @@ milestones, and eventually photos, voice, and conversations — and turns it
 into things a family can keep: an autobiography, an interactive timeline,
 messages delivered in the future, and a lasting memorial.
 
+## Design
+
+The UI follows the **"Letterpress"** system: sacred, family-facing surfaces
+(landing, timeline, autobiography, memorial) live on warm paper; writing
+surfaces (letters, the interview) live in a dark study; a single sealing-wax
+red is the only accent. Serif is the system Charter/Georgia stack — no
+webfonts. Tokens live in `tailwind.config.ts`, keyframes (wax seal, candle,
+typewriter caret) in `src/index.css`; animations respect
+`prefers-reduced-motion`.
+
 ## What's in this MVP
 
 A local-first web app. The entire archive lives in the browser

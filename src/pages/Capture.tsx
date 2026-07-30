@@ -11,6 +11,7 @@ import { makeThumbnail, putPhoto } from "@/lib/photoStore";
 import { putAudio } from "@/lib/audioStore";
 import { EntryKind, ENTRY_KIND_LABELS } from "@/lib/types";
 import clsx from "clsx";
+import { UtilityPage } from "@/components/AppLayout";
 
 const CAPTURE_KINDS: (EntryKind | "photo" | "calendar")[] = [
   "journal",
@@ -276,7 +277,7 @@ export default function Capture() {
   );
 
   return (
-    <div>
+    <UtilityPage>
       <PageHeader
         title="Capture"
         subtitle="Two minutes is enough. Answer today's question, dictate a memory, or drop in a batch of photos — every entry compounds into your timeline and autobiography."
@@ -323,6 +324,6 @@ export default function Capture() {
         </Link>{" "}
         — it asks follow-up questions and turns your answers into stories.
       </p>
-    </div>
+    </UtilityPage>
   );
 }

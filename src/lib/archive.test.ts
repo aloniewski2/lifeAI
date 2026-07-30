@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   chaptersByYear,
+  decadeAges,
+  groupByDecade,
   dueMessages,
   parseArchive,
   pendingMessages,
@@ -116,5 +118,38 @@ describe("future messages", () => {
       "past",
       "today",
     ]);
+  });
+});
+
+describe("groupByDecade", () => {
+  it("groups chronologically with decade labels", () => {
+    const groups = groupByDecade([
+      entry({ id: "c", date: "1984-07-19" }),
+      entry({ id: "a", date: "1972-09-12" }),
+      entry({ id: "b", date: "1978-03-21" }),
+    ]);
+    expect(groups.map((g) => g.label)).toEqual(["1970s", "1980s"]);
+    expect(groups[0].entries.map((e) => e.id)).toEqual(["a", "b"]);
+  });
+
+  it("returns nothing for no entries", () => {
+    expect(groupByDecade([])).toEqual([]);
+  });
+});
+
+describe("decadeAges", () => {
+  it("labels the first decade of life as childhood", () => {
+    expect(decadeAges(1950, 1951)).toBe("childhood");
+    expect(decadeAges(1960, 1951)).toBe("childhood");
+  });
+
+  it("labels later decades as an age range", () => {
+    expect(decadeAges(1970, 1951)).toBe("age 19–28");
+    expect(decadeAges(2020, 1951)).toBe("age 69–78");
+  });
+
+  it("is empty without a birth year or before birth", () => {
+    expect(decadeAges(1970, null)).toBe("");
+    expect(decadeAges(1930, 1951)).toBe("");
   });
 });

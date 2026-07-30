@@ -15,6 +15,7 @@ import {
   webGpuAvailable,
 } from "@/lib/interview";
 import { Entry } from "@/lib/types";
+import { UtilityPage } from "@/components/AppLayout";
 
 const ENGINES: { id: EngineId; label: string; badge: string }[] = [
   { id: "guided", label: "Quotes only", badge: "No AI · private" },
@@ -112,7 +113,7 @@ export default function Ask() {
   }
 
   return (
-    <div>
+    <UtilityPage>
       <PageHeader
         title={`Ask ${name}`}
         subtitle="Ask anything. Answers are drawn only from recorded memories — nothing is ever invented."
@@ -295,6 +296,6 @@ export default function Ask() {
           </form>
         </div>
       )}
-    </div>
+    </UtilityPage>
   );
 }

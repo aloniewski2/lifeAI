@@ -9,7 +9,16 @@ type Playback = "idle" | "loading" | "playing";
  * interviewer uses. One reading at a time app-wide: starting a new one
  * cancels the old one (whose button resets via onEnded).
  */
-export function ListenButton({ text }: { text: string }) {
+export function ListenButton({
+  text,
+  variant = "study",
+  label = "Listen",
+}: {
+  text: string;
+  /** "letterpress" renders the ♪ small-caps wax text button for paper pages. */
+  variant?: "study" | "letterpress";
+  label?: string;
+}) {
   const [playback, setPlayback] = useState<Playback>("idle");
   const [progress, setProgress] = useState(0);
   const mounted = useRef(true);
@@ -37,6 +46,40 @@ export function ListenButton({ text }: { text: string }) {
       // speak() resolves once playback (or the fallback voice) has started.
       setPlayback((current) => (current === "loading" ? "playing" : current));
     }
+  }
+
+  if (variant === "letterpress") {
+    const base =
+      "mx-auto block p-1 text-xs uppercase tracking-[0.16em] transition-colors";
+    if (playback === "playing") {
+      return (
+        <button
+          type="button"
+          onClick={stopSpeaking}
+          className={`${base} text-ink-600 hover:text-wax-600`}
+        >
+          ■&nbsp;&nbsp;Stop reading
+        </button>
+      );
+    }
+    if (playback === "loading") {
+      return (
+        <button type="button" disabled className={`${base} text-stone-400`}>
+          {progress > 0 && progress < 1
+            ? `Preparing voice… ${Math.round(progress * 100)}%`
+            : "Preparing voice…"}
+        </button>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={play}
+        className={`${base} text-wax-600 hover:text-ink-900`}
+      >
+        ♪&nbsp;&nbsp;{label}
+      </button>
+    );
   }
 
   if (playback === "playing") {

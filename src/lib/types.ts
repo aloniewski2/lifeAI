@@ -47,11 +47,22 @@ export interface Profile {
   epitaph: string;
 }
 
+/** App-level preferences that travel with the archive. */
+export interface Settings {
+  /** "ritual" adds a read-it-once-more confirmation before the wax is pressed. */
+  sealCeremony: "ritual" | "quiet";
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  sealCeremony: "ritual",
+};
+
 /** The entire on-device archive, versioned for future migrations. */
 export interface Archive {
   version: 1;
   profile: Profile;
   consent: Consent;
+  settings: Settings;
   entries: Entry[];
   messages: FutureMessage[];
   /** ISO timestamp of the last full backup export, for the backup nudge. */
@@ -72,6 +83,7 @@ export const EMPTY_ARCHIVE: Archive = {
   version: 1,
   profile: { name: "", birthYear: null, epitaph: "" },
   consent: DEFAULT_CONSENT,
+  settings: DEFAULT_SETTINGS,
   entries: [],
   messages: [],
   lastExportedAt: null,
