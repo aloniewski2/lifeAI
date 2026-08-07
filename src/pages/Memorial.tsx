@@ -1,4 +1,5 @@
 import { DoubleRule, Eyebrow, MattedPhoto } from "@/components/Letterpress";
+import { MemorialExportButton } from "@/components/MemorialExportButton";
 import { useArchive } from "@/lib/store";
 import { sortByDate } from "@/lib/archive";
 import { Entry } from "@/lib/types";
@@ -186,6 +187,8 @@ export default function Memorial() {
           {hasName ? firstName : "its subject"} and chosen for this purpose.
           Nothing was generated.
         </p>
+
+        {!isEmpty && <MemorialExportButton />}
       </div>
     </div>
   );

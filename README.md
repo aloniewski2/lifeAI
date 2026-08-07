@@ -35,7 +35,7 @@ the owner exports it.
 | **Timeline** | The whole archive in chronological order, filterable by kind |
 | **Autobiography** | Chapters auto-assembled by year from the owner's own words |
 | **Future messages** | Sealed letters that unlock on a chosen date |
-| **Memorial** | A preview of the family-facing archive: values, milestones, stories, photos |
+| **Memorial** | The family-facing archive: values, milestones, stories, photos — exportable as one self-contained HTML file that needs no app, no server, and no internet |
 | **Vault** | Per-source consent switches, JSON export/import, permanent wipe |
 
 ### How capture stays fast
@@ -90,12 +90,16 @@ the owner exports it.
    reconstruction drawn from the person's own words.
 4. **Yours to delete.** One action wipes everything, with no server copy to
    linger.
+5. **Outlives the app.** The memorial exports as a single HTML file with the
+   photos inlined (`src/lib/memorialExport.ts`) — no scripts, no network
+   requests, no dependency on this project still existing. Family can email
+   it, print it, or keep it on a drive.
 
 ## Roadmap
 
 - AI editing pass that polishes autobiography prose without inventing facts
 - Delivery of future messages to recipients (email / family accounts)
-- Shareable memorial and family archive with per-person access
+- Family archive with per-person access (the memorial already exports as a standalone keepsake file)
 - Conversational "ask them a question" mode over the archive, clearly
   labeled as a simulation
 - End-to-end encrypted sync and family inheritance/executor flow
