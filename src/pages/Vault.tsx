@@ -40,7 +40,7 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   {
     key: "socialMedia",
     label: "Social media",
-    note: "Roadmap — one-time imports you review before keeping.",
+    note: "Import an Instagram, Facebook, or X export; posts become suggestions you review, never auto-added.",
   },
   {
     key: "email",
