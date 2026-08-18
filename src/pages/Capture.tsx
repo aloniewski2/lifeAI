@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import exifr from "exifr";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { CalendarImport } from "@/components/CalendarImport";
+import { SocialImport } from "@/components/SocialImport";
 import { DictationButton } from "@/components/DictationButton";
 import { useArchive } from "@/lib/store";
 import { newId } from "@/lib/archive";
@@ -10,13 +12,16 @@ import { makeThumbnail, putPhoto } from "@/lib/photoStore";
 import { putAudio } from "@/lib/audioStore";
 import { EntryKind, ENTRY_KIND_LABELS } from "@/lib/types";
 import clsx from "clsx";
+import { UtilityPage } from "@/components/AppLayout";
 
-const CAPTURE_KINDS: (EntryKind | "photo")[] = [
+const CAPTURE_KINDS: (EntryKind | "photo" | "calendar" | "social")[] = [
   "journal",
   "story",
   "milestone",
   "value",
   "photo",
+  "calendar",
+  "social",
 ];
 
 const PROMPTS: Record<string, string> = {
@@ -269,12 +274,12 @@ function PhotoImport() {
 export default function Capture() {
   const location = useLocation();
   const prefill = (location.state ?? {}) as CapturePrefill;
-  const [kind, setKind] = useState<EntryKind | "photo">(
+  const [kind, setKind] = useState<EntryKind | "photo" | "calendar" | "social">(
     prefill.kind ?? "journal",
   );
 
   return (
-    <div>
+    <UtilityPage>
       <PageHeader
         title="Capture"
         subtitle="Two minutes is enough. Answer today's question, dictate a memory, or drop in a batch of photos — every entry compounds into your timeline and autobiography."
@@ -293,13 +298,23 @@ export default function Capture() {
                 : "border border-ink-700 text-ink-300 hover:text-ink-100",
             )}
           >
-            {k === "photo" ? "Photos" : ENTRY_KIND_LABELS[k]}
+            {k === "photo"
+              ? "Photos"
+              : k === "calendar"
+                ? "Calendar"
+                : k === "social"
+                  ? "Social"
+                  : ENTRY_KIND_LABELS[k]}
           </button>
         ))}
       </div>
 
       {kind === "photo" ? (
         <PhotoImport />
+      ) : kind === "calendar" ? (
+        <CalendarImport />
+      ) : kind === "social" ? (
+        <SocialImport />
       ) : (
         <TextEntryForm
           key={`${kind}-${prefill.question ?? ""}`}
@@ -315,6 +330,6 @@ export default function Capture() {
         </Link>{" "}
         — it asks follow-up questions and turns your answers into stories.
       </p>
-    </div>
+    </UtilityPage>
   );
 }

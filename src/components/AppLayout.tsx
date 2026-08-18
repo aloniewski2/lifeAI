@@ -20,7 +20,7 @@ const NAV = [
   { to: "/app/timeline", label: "Timeline", icon: Clock },
   { to: "/app/autobiography", label: "Autobiography", icon: BookOpen },
   { to: "/app/ask", label: "Ask", icon: MessagesSquare },
-  { to: "/app/messages", label: "Future messages", icon: Mail },
+  { to: "/app/messages", label: "Letters", icon: Mail },
   { to: "/app/memorial", label: "Memorial", icon: Flame },
   { to: "/app/vault", label: "Vault & privacy", icon: Lock },
 ];
@@ -28,10 +28,12 @@ const NAV = [
 export function AppLayout() {
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-900 p-4">
-        <Link to="/" className="mb-8 flex items-center gap-2 px-2">
-          <Feather className="h-5 w-5 text-ember-400" />
-          <span className="font-serif text-lg text-ink-50">Legacy OS</span>
+      <aside className="flex w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 p-4">
+        <Link to="/" className="mb-8 flex items-baseline gap-2 px-2">
+          <Feather className="h-4 w-4 translate-y-0.5 text-wax-400" />
+          <span className="font-serif text-[15px] uppercase tracking-[0.18em] text-parch-100">
+            Legacy&nbsp;OS
+          </span>
         </Link>
         <nav className="flex flex-col gap-1">
           {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -41,10 +43,10 @@ export function AppLayout() {
               end={end}
               className={({ isActive }) =>
                 clsx(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-3 rounded-[3px] px-3 py-2 text-sm transition-colors",
                   isActive
-                    ? "bg-ink-800 text-ember-300"
-                    : "text-ink-300 hover:bg-ink-800 hover:text-ink-100",
+                    ? "bg-ink-900 text-wax-400"
+                    : "text-parch-300 hover:bg-ink-900 hover:text-parch-100",
                 )
               }
             >
@@ -57,11 +59,18 @@ export function AppLayout() {
           Everything you record stays on this device unless you export it.
         </p>
       </aside>
-      <main className="min-w-0 flex-1 p-8">
-        <div className="mx-auto max-w-3xl">
-          <Outlet />
-        </div>
+      <main className="min-w-0 flex-1">
+        <Outlet />
       </main>
+    </div>
+  );
+}
+
+/** Standard wrapper for dark-study utility pages (forms, settings). */
+export function UtilityPage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="p-6 sm:p-8">
+      <div className="mx-auto max-w-3xl">{children}</div>
     </div>
   );
 }

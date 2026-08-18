@@ -63,13 +63,14 @@ export function loadWebLlm(
 export class WebLlmEngine implements InterviewEngine {
   constructor(
     private onProgress: (text: string, progress: number) => void,
+    private system: string = INTERVIEWER_SYSTEM,
   ) {}
 
   async nextQuestion(turns: ChatTurn[]): Promise<string> {
     const engine = await loadWebLlm(this.onProgress);
     const response = await engine.chat.completions.create({
       messages: [
-        { role: "system", content: INTERVIEWER_SYSTEM },
+        { role: "system", content: this.system },
         ...(turns.length > 0
           ? turns
           : [

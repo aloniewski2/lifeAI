@@ -14,6 +14,7 @@ import { useArchive } from "@/lib/store";
 import { chaptersByYear, pendingMessages } from "@/lib/archive";
 import { anotherPrompt, promptOfTheDay } from "@/lib/prompts";
 import { ENTRY_KIND_LABELS } from "@/lib/types";
+import { UtilityPage } from "@/components/AppLayout";
 
 export default function Dashboard() {
   const { archive, update } = useArchive();
@@ -34,7 +35,7 @@ export default function Dashboard() {
     (daysSinceBackup === null || daysSinceBackup >= 30);
 
   return (
-    <div>
+    <UtilityPage>
       <PageHeader
         title={name ? `Welcome back, ${name}` : "Your archive"}
         subtitle="A quiet place where your life accumulates. Everything below is stored only on this device."
@@ -62,6 +63,43 @@ export default function Dashboard() {
         </div>
       )}
 
+      {archive.entries.length === 0 ? (
+        <div className="mb-6 py-10 text-center">
+          <p className="text-xs uppercase tracking-[0.28em] text-ember-400">
+            Begin here
+          </p>
+          <h2 className="mx-auto mt-5 max-w-md font-serif text-2xl font-normal leading-[1.3] text-ink-100 sm:text-3xl">
+            Every archive begins
+            <br />
+            with a single page.
+          </h2>
+          <div className="mx-auto mt-8 max-w-[460px] border-y border-ink-800 px-3 py-6">
+            <p className="font-serif text-xl italic leading-[1.45] text-ink-100">
+              “{prompt.question}”
+            </p>
+          </div>
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() =>
+                navigate("/app/capture", {
+                  state: { kind: prompt.kind, question: prompt.question },
+                })
+              }
+            >
+              Answer it — two minutes
+            </button>
+            <button
+              type="button"
+              className="text-sm text-ink-300 underline-offset-4 hover:text-ink-100 hover:underline"
+              onClick={() => setPrompt((p) => anotherPrompt(p))}
+            >
+              A different question
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="card mb-6 border-ember-500/30">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-ember-400">
           <Sparkles className="h-3.5 w-3.5" />
@@ -85,6 +123,17 @@ export default function Dashboard() {
           <button
             type="button"
             className="btn-ghost"
+            onClick={() =>
+              navigate("/app/interview", {
+                state: { question: prompt.question },
+              })
+            }
+          >
+            Talk it out with the interviewer
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
             onClick={() => setPrompt((p) => anotherPrompt(p))}
           >
             <RefreshCw className="h-4 w-4" />
@@ -92,6 +141,7 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+      )}
 
       {!name && (
         <div className="card mb-6">
@@ -181,6 +231,6 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
-    </div>
+    </UtilityPage>
   );
 }

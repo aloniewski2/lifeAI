@@ -9,6 +9,7 @@ import { setApiKey } from "@/lib/apiKey";
 import { allPhotos, putPhoto, wipePhotos } from "@/lib/photoStore";
 import { allAudio, putAudio, wipeAudio } from "@/lib/audioStore";
 import { Consent, EMPTY_ARCHIVE } from "@/lib/types";
+import { UtilityPage } from "@/components/AppLayout";
 
 const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   {
@@ -34,12 +35,12 @@ const SOURCES: { key: keyof Consent; label: string; note: string }[] = [
   {
     key: "calendar",
     label: "Calendar",
-    note: "Roadmap — milestones suggested from events, never auto-added.",
+    note: "Import .ics exports; events become suggestions you review, never auto-added.",
   },
   {
     key: "socialMedia",
     label: "Social media",
-    note: "Roadmap — one-time imports you review before keeping.",
+    note: "Import an Instagram, Facebook, or X export; posts become suggestions you review, never auto-added.",
   },
   {
     key: "email",
@@ -140,7 +141,7 @@ export default function Vault() {
   }
 
   return (
-    <div>
+    <UtilityPage>
       <PageHeader
         title="Vault & privacy"
         subtitle="Your archive belongs to you. It is stored only in this browser, it moves only when you export it, and it disappears the moment you say so."
@@ -190,6 +191,35 @@ export default function Vault() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="card mb-6">
+        <h2 className="font-serif text-lg text-ink-50">Sealing letters</h2>
+        <p className="mt-1 text-sm text-ink-300">
+          "Ritual" adds a read-it-once-more step before the wax is pressed;
+          "quiet" seals in one tap. Sealing is permanent either way.
+        </p>
+        <div className="mt-4 flex gap-2">
+          {(["ritual", "quiet"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() =>
+                update((a) => ({
+                  ...a,
+                  settings: { ...a.settings, sealCeremony: mode },
+                }))
+              }
+              className={
+                archive.settings.sealCeremony === mode
+                  ? "rounded-[3px] bg-wax-600 px-4 py-2 text-sm font-medium capitalize text-paper-50"
+                  : "rounded-[3px] border border-ink-700 px-4 py-2 text-sm capitalize text-ink-300 hover:text-ink-100"
+              }
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="card mb-6">
@@ -258,6 +288,6 @@ export default function Vault() {
           Wipe archive
         </button>
       </section>
-    </div>
+    </UtilityPage>
   );
 }

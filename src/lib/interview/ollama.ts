@@ -52,10 +52,12 @@ export async function ollamaChat(
 }
 
 export class OllamaEngine implements InterviewEngine {
+  constructor(private system: string = INTERVIEWER_SYSTEM) {}
+
   async nextQuestion(turns: ChatTurn[]): Promise<string> {
     return ollamaChat(
       [
-        { role: "system", content: INTERVIEWER_SYSTEM },
+        { role: "system", content: this.system },
         ...(turns.length > 0
           ? turns
           : [

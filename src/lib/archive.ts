@@ -24,6 +24,10 @@ export function parseArchive(raw: string | null): Archive {
         epitaph: data.profile?.epitaph ?? "",
       },
       consent: { ...DEFAULT_CONSENT, ...data.consent },
+      settings: {
+        sealCeremony:
+          data.settings?.sealCeremony === "quiet" ? "quiet" : "ritual",
+      },
       entries: Array.isArray(data.entries) ? data.entries : [],
       messages: Array.isArray(data.messages) ? data.messages : [],
       lastExportedAt: data.lastExportedAt ?? null,
@@ -78,6 +82,40 @@ export function dueMessages(
   return messages
     .filter((m) => m.deliverOn <= today)
     .sort((a, b) => a.deliverOn.localeCompare(b.deliverOn));
+}
+
+export interface DecadeGroup {
+  /** First year of the decade, e.g. 1970. */
+  decade: number;
+  /** "1970s" */
+  label: string;
+  entries: Entry[];
+}
+
+/** Group entries into chronological decades for the timeline hallway. */
+export function groupByDecade(entries: Entry[]): DecadeGroup[] {
+  const byDecade = new Map<number, Entry[]>();
+  for (const entry of sortByDate(entries)) {
+    const decade = Math.floor(Number(entry.date.slice(0, 4)) / 10) * 10;
+    if (!byDecade.has(decade)) byDecade.set(decade, []);
+    byDecade.get(decade)!.push(entry);
+  }
+  return [...byDecade.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([decade, decEntries]) => ({
+      decade,
+      label: `${decade}s`,
+      entries: decEntries,
+    }));
+}
+
+/** "childhood" / "age 20–29" label for a decade, given a birth year. */
+export function decadeAges(decade: number, birthYear: number | null): string {
+  if (birthYear === null) return "";
+  const start = decade - birthYear;
+  if (start + 9 < 0) return "";
+  if (start < 10) return "childhood";
+  return `age ${start}–${start + 9}`;
 }
 
 /** Case-insensitive match over title, content, and tags. */
