@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMemorialHtml,
+  pickVoices,
   escapeHtml,
   memorialFileName,
 } from "./memorialExport";
@@ -162,5 +163,64 @@ describe("memorialFileName", () => {
         archiveWith({ profile: { name: "  ", birthYear: null, epitaph: "" } }),
       ),
     ).toBe("memorial.html");
+  });
+});
+
+describe("voice in the memorial", () => {
+  const withStory = (id: string, title: string) =>
+    archiveWith({
+      entries: [
+        {
+          id,
+          kind: "story",
+          title,
+          content: "We drove all night to get there.",
+          date: "1974-06-02",
+          tags: [],
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+
+  const uri = (bytes: number) => `data:audio/webm;base64,${"A".repeat(Math.ceil(bytes / 0.75))}`;
+
+  it("embeds a player for a story that has a recording", () => {
+    const html = buildMemorialHtml(withStory("s1", "The drive"), {
+      voices: { s1: [uri(1000)] },
+    });
+    expect(html).toContain("<audio controls");
+    expect(html).toContain("own voice");
+  });
+
+  it("leaves stories without a recording untouched", () => {
+    const html = buildMemorialHtml(withStory("s1", "The drive"));
+    expect(html).not.toContain("<audio");
+  });
+
+  it("embeds only the first take, not the outtakes", () => {
+    const html = buildMemorialHtml(withStory("s1", "The drive"), {
+      voices: { s1: [uri(500), uri(600)] },
+    });
+    expect(html.match(/<audio/g)).toHaveLength(1);
+  });
+
+  it("keeps the file openable by refusing to blow the byte budget", () => {
+    const { chosen, skipped, bytes } = pickVoices(
+      ["a", "b"],
+      { a: [uri(10_000)], b: [uri(10_000)] },
+      12_000,
+    );
+    expect(Object.keys(chosen)).toHaveLength(1);
+    expect(skipped).toBe(1);
+    expect(bytes).toBeLessThanOrEqual(12_000);
+  });
+
+  it("takes the shortest recordings first so more voices survive", () => {
+    const { chosen } = pickVoices(
+      ["long", "short"],
+      { long: [uri(9_000)], short: [uri(1_000)] },
+      5_000,
+    );
+    expect(Object.keys(chosen)).toEqual(["short"]);
   });
 });

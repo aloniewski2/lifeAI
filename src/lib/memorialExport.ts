@@ -150,6 +150,19 @@ figcaption {
   font-size: 12px; font-style: italic; color: #8c8270;
 }
 .story { margin-top: 36px; text-align: left; }
+.voice {
+  margin: 14px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voice audio { width: 100%; max-width: 420px; }
+.voice span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7f72;
+}
 .story h3 {
   margin: 0 0 10px; text-align: center;
   font-family: Charter, Georgia, serif; font-size: 17px; font-weight: 500; color: #494235;
@@ -173,16 +186,73 @@ figcaption {
 }
 `;
 
+/**
+ * Voice recordings as data URIs, by entry id — the takes an entry carries.
+ * Only the first take of each story is embedded: the others are alternate
+ * readings, and the family wants the story, not the outtakes.
+ */
+export type VoiceData = Record<string, string[]>;
+
 export interface MemorialExportOptions {
   /** Photo data URIs by entry id; entries without one are skipped. */
   photos?: PhotoData;
   /** Max photos in "a life in pictures". */
   maxPhotos?: number;
+  /** Voice recordings by entry id. */
+  voices?: VoiceData;
+  /**
+   * Ceiling for embedded audio. Self-contained means the bytes live in the
+   * file, and a keepsake nobody can open is not a keepsake — so recordings
+   * are added shortest-first until this is spent.
+   */
+  maxVoiceBytes?: number;
+}
+
+/** A data URI's decoded size, near enough for budgeting. */
+export function dataUriBytes(uri: string): number {
+  const comma = uri.indexOf(",");
+  if (comma < 0) return 0;
+  return Math.floor((uri.length - comma - 1) * 0.75);
+}
+
+/**
+ * Chooses which recordings fit the budget. Shortest first, so a long
+ * rambling take never crowds out five short ones — more of the voice
+ * survives that way.
+ */
+export function pickVoices(
+  ids: string[],
+  voices: VoiceData,
+  budget: number,
+): { chosen: Record<string, string>; bytes: number; skipped: number } {
+  const takes = ids
+    .map((id) => ({ id, uri: voices[id]?.[0] }))
+    .filter((t): t is { id: string; uri: string } => Boolean(t.uri))
+    .map((t) => ({ ...t, size: dataUriBytes(t.uri) }))
+    .sort((a, b) => a.size - b.size);
+
+  const chosen: Record<string, string> = {};
+  let bytes = 0;
+  let skipped = 0;
+  for (const take of takes) {
+    if (bytes + take.size > budget) {
+      skipped++;
+      continue;
+    }
+    chosen[take.id] = take.uri;
+    bytes += take.size;
+  }
+  return { chosen, bytes, skipped };
 }
 
 export function buildMemorialHtml(
   archive: Archive,
-  { photos = {}, maxPhotos = 12 }: MemorialExportOptions = {},
+  {
+    photos = {},
+    maxPhotos = 12,
+    voices = {},
+    maxVoiceBytes = 60 * 1024 * 1024,
+  }: MemorialExportOptions = {},
 ): string {
   const name = archive.profile.name.trim() || "A life worth keeping";
   const firstName = archive.profile.name.trim().split(" ")[0];
@@ -254,11 +324,22 @@ export function buildMemorialHtml(
     );
   }
 
+  const voice = pickVoices(
+    stories.map((s) => s.id),
+    voices,
+    maxVoiceBytes,
+  ).chosen;
+
   if (stories.length > 0) {
     const told = stories
       .map(
         (s) =>
-          `<div class="story"><h3>${escapeHtml(s.title)}</h3><p>${dropCapMarkup(s.content)}</p></div>`,
+          `<div class="story"><h3>${escapeHtml(s.title)}</h3>` +
+          (voice[s.id]
+            ? `<div class="voice"><audio controls preload="none" src="${escapeHtml(voice[s.id])}"></audio>` +
+              `<span>In ${escapeHtml(firstName || "their")}${firstName ? "&rsquo;s" : ""} own voice</span></div>`
+            : "") +
+          `<p>${dropCapMarkup(s.content)}</p></div>`,
       )
       .join("");
     parts.push(

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useArchive } from "@/lib/store";
 import { allPhotos } from "@/lib/photoStore";
+import { allAudio } from "@/lib/audioStore";
 import {
   buildMemorialHtml,
   memorialFileName,
   PhotoData,
+  VoiceData,
 } from "@/lib/memorialExport";
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -38,7 +40,18 @@ export function MemorialExportButton() {
       for (const [id, blob] of await allPhotos()) {
         if (wanted.has(id)) photos[id] = await blobToDataUrl(blob);
       }
-      const html = buildMemorialHtml(archive, { photos });
+      // The voice is the part a family cannot reconstruct from anything
+      // else, so it travels with the keepsake rather than staying in the app.
+      const storyIds = new Set(
+        archive.entries.filter((e) => e.kind === "story").map((e) => e.id),
+      );
+      const voices: VoiceData = {};
+      for (const [id, takes] of await allAudio()) {
+        if (!storyIds.has(id) || takes.length === 0) continue;
+        voices[id] = [await blobToDataUrl(takes[0])];
+      }
+
+      const html = buildMemorialHtml(archive, { photos, voices });
       const url = URL.createObjectURL(
         new Blob([html], { type: "text/html;charset=utf-8" }),
       );
